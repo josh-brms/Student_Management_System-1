@@ -38,6 +38,11 @@ export async function updateProfile(userId: string, values: Partial<Pick<Profile
 // Service Role key (never expose service role on the client).
 // This helper creates a user via standard signUp (sends confirmation email).
 export async function adminCreateUser(values: UserFormValues): Promise<{ error: string | null }> {
+  // Validate Gmail domain
+  if (!values.email.endsWith('@gmail.com')) {
+    return { error: 'Email must be a Gmail account (@gmail.com)' }
+  }
+  
   const { error } = await supabase.auth.signUp({
     email: values.email,
     password: values.password,
