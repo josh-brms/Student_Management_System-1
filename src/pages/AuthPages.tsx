@@ -4,6 +4,19 @@ import { GraduationCap } from 'lucide-react'
 import { useAuth } from '../lib/AuthContext'
 import { Button, Input, FormField } from '../components/ui'
 
+function normalizeEmail(email: string) {
+  return email.trim().toLowerCase()
+}
+
+function isAllowedEmailDomain(email: string) {
+  const normalized = normalizeEmail(email)
+  const atIndex = normalized.lastIndexOf('@')
+  if (atIndex < 0) return false
+
+  const domain = normalized.slice(atIndex + 1)
+  return domain.endsWith('.edu') || domain === 'gmail.com'
+}
+
 // ─── Login ────────────────────────────────────────────────────────────────────
 export function LoginPage() {
   const { signIn } = useAuth()
@@ -17,7 +30,7 @@ export function LoginPage() {
     e.preventDefault()
     setError('')
     setLoading(true)
-    const { error } = await signIn(email, password)
+    const { error } = await signIn(normalizeEmail(email), password)
     setLoading(false)
     if (error) { setError(error); return }
     navigate('/dashboard')
@@ -27,7 +40,13 @@ export function LoginPage() {
     <AuthLayout title="Welcome back" subtitle="Sign in to your STMS account">
       <form onSubmit={handleSubmit} className="space-y-4">
         <FormField label="Email">
-          <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@cspc.edu.ph" required />
+          <Input
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            placeholder="you@school.edu or you@gmail.com"
+            required
+          />
         </FormField>
         <FormField label="Password">
           <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required />
@@ -61,8 +80,12 @@ export function RegisterPage() {
     setError('')
     if (password !== confirm) { setError('Passwords do not match.'); return }
     if (password.length < 6) { setError('Password must be at least 6 characters.'); return }
+    if (!isAllowedEmailDomain(email)) {
+      setError('Use a .edu email address or a gmail.com address.')
+      return
+    }
     setLoading(true)
-    const { error } = await signUp(email, password, name)
+    const { error } = await signUp(normalizeEmail(email), password, name)
     setLoading(false)
     if (error) { setError(error); return }
     navigate('/dashboard')
@@ -75,7 +98,13 @@ export function RegisterPage() {
           <Input value={name} onChange={e => setName(e.target.value)} placeholder="Juan dela Cruz" required />
         </FormField>
         <FormField label="Email">
-          <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@cspc.edu.ph" required />
+          <Input
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            placeholder="you@school.edu or you@gmail.com"
+            required
+          />
         </FormField>
         <FormField label="Password">
           <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Min. 6 characters" required />
