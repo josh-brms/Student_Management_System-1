@@ -127,7 +127,7 @@ function CreateUserModal({ onSave, onClose }: { onSave: (v: UserFormValues) => P
     <Modal title="New user" onClose={onClose}>
       <div className="space-y-4">
         <FormField label="Full name"><Input value={form.name} onChange={e => set('name', e.target.value)} placeholder="Juan dela Cruz" /></FormField>
-        <FormField label="Email"><Input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="user@cspc.edu.ph" /></FormField>
+        <FormField label="Email"><Input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="user@gmail.com" /></FormField>
         <FormField label="Password"><Input type="password" value={form.password} onChange={e => set('password', e.target.value)} placeholder="Min. 6 characters" /></FormField>
         <FormField label="Role">
           <Select value={form.role} onChange={e => set('role', e.target.value as any)}>

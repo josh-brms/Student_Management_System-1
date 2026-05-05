@@ -29,6 +29,10 @@ export function LoginPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError('')
+    if (!email.endsWith('@gmail.com')) {
+      setError('Email must be a Gmail account (@gmail.com)')
+      return
+    }
     setLoading(true)
     const { error } = await signIn(normalizeEmail(email), password)
     setLoading(false)
@@ -40,13 +44,7 @@ export function LoginPage() {
     <AuthLayout title="Welcome back" subtitle="Sign in to your STMS account">
       <form onSubmit={handleSubmit} className="space-y-4">
         <FormField label="Email">
-          <Input
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            placeholder="you@school.edu or you@gmail.com"
-            required
-          />
+          <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@gmail.com" required />
         </FormField>
         <FormField label="Password">
           <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required />
@@ -78,6 +76,10 @@ export function RegisterPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError('')
+    if (!email.endsWith('@gmail.com')) {
+      setError('Email must be a Gmail account (@gmail.com)')
+      return
+    }
     if (password !== confirm) { setError('Passwords do not match.'); return }
     if (password.length < 6) { setError('Password must be at least 6 characters.'); return }
     if (!isAllowedEmailDomain(email)) {
@@ -98,13 +100,7 @@ export function RegisterPage() {
           <Input value={name} onChange={e => setName(e.target.value)} placeholder="Juan dela Cruz" required />
         </FormField>
         <FormField label="Email">
-          <Input
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            placeholder="you@school.edu or you@gmail.com"
-            required
-          />
+          <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@gmail.com" required />
         </FormField>
         <FormField label="Password">
           <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Min. 6 characters" required />
