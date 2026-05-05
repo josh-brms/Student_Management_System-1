@@ -17,12 +17,16 @@ export async function fetchAllProfiles(): Promise<Profile[]> {
 
 // ─── Update profile ───────────────────────────────────────────────────────────
 export async function updateProfile(userId: string, values: Partial<Pick<Profile, 'name' | 'role'>>): Promise<Profile> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .update(values)
+  const updateData: Record<string, unknown> = {}
+  if (values.name !== undefined) updateData.name = values.name
+  if (values.role !== undefined) updateData.role = values.role
+
+  const { data, error } = await ((supabase
+    .from('profiles') as any)
+    .update(updateData)
     .eq('id', userId)
     .select()
-    .single()
+    .single() as any)
 
   if (error) throw new Error(error.message)
   return data as Profile
@@ -49,10 +53,12 @@ export async function adminCreateUser(values: UserFormValues): Promise<{ error: 
 // we track this in a custom `active` column you can add to profiles.
 // Add: alter table public.profiles add column active boolean not null default true;
 export async function setUserActive(userId: string, active: boolean): Promise<void> {
-  const { error } = await supabase
-    .from('profiles')
-    .update({ active } as any)
-    .eq('id', userId)
+  const updateData: Record<string, unknown> = { active }
+
+  const { error } = await ((supabase
+    .from('profiles') as any)
+    .update(updateData)
+    .eq('id', userId) as any)
 
   if (error) throw new Error(error.message)
 }

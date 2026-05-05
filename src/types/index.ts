@@ -13,6 +13,7 @@ export interface Profile {
   role: Role
   created_at: string
   updated_at: string
+  active?: boolean
   // joined from auth.users via Supabase admin API (admin view only)
   email?: string
 }
@@ -48,26 +49,30 @@ export interface UserFormValues {
   role: Role
 }
 
-export type TaskFilter = {
+export interface TaskFilter {
   status: Status | 'all'
   type: TaskType | 'all'
   search: string
 }
 
-// Supabase Database type map (mirrors the schema)
-export type Database = {
+// Supabase Database Schema Types
+export interface Database {
   public: {
     Tables: {
       profiles: {
         Row: Profile
-        Insert: Omit<Profile, 'created_at' | 'updated_at'>
-        Update: Partial<Omit<Profile, 'id' | 'created_at'>>
+        Insert: Omit<Profile, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<Profile, 'id' | 'created_at' | 'updated_at'>>
       }
       tasks: {
         Row: Task
         Insert: Omit<Task, 'id' | 'created_at' | 'updated_at' | 'profile'>
-        Update: Partial<Omit<Task, 'id' | 'created_at' | 'user_id' | 'profile'>>
+        Update: Partial<Omit<Task, 'id' | 'created_at' | 'updated_at' | 'profile'>>
       }
     }
+    Views: Record<string, never>
+    Functions: Record<string, never>
+    Enums: Record<string, never>
+    CompositeTypes: Record<string, never>
   }
 }
