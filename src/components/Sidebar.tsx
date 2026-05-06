@@ -16,61 +16,39 @@ export function Sidebar() {
     return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
   }
 
-  const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-      isActive
-        ? 'bg-blue-50 text-blue-700'
-        : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'
-    }`
+  const navClass = (isActive: boolean) => (isActive ? 'nav-item active' : 'nav-item')
 
   return (
-    <aside className="flex h-screen w-56 flex-col border-r border-gray-200 bg-white px-3 py-4 shrink-0">
-      {/* Logo */}
-      <div className="mb-6 px-2">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
-            <GraduationCap size={16} className="text-white" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-gray-900 leading-none">STMS</p>
-            <p className="text-[10px] text-gray-400 mt-0.5">CSPC 321 · Group 3</p>
-          </div>
-        </div>
-      </div>
+    <div className="sidebar">
+      <div className="sidebar-brand">STMS<span>CSPC 321 · Group 3</span></div>
 
-      {/* Nav */}
-      <nav className="flex-1 space-y-0.5">
-        <NavLink to="/dashboard" className={navLinkClass}>
-          <LayoutDashboard size={15} /> Dashboard
+      <nav style={{padding: '0 0 12px 0'}}>
+        <NavLink to="/dashboard" className={({isActive}) => navClass(isActive)}>
+          <div className="nav-icon"><LayoutDashboard size={16} /></div>
+          Dashboard
         </NavLink>
-        <NavLink to="/tasks" className={navLinkClass}>
-          <CheckSquare size={15} /> {isAdmin ? 'All tasks' : 'My tasks'}
+        <NavLink to="/tasks" className={({isActive}) => navClass(isActive)}>
+          <div className="nav-icon"><CheckSquare size={16} /></div>
+          {isAdmin ? 'All tasks' : 'My tasks'}
         </NavLink>
         {isAdmin && (
-          <NavLink to="/users" className={navLinkClass}>
-            <Users size={15} /> Users
+          <NavLink to="/users" className={({isActive}) => navClass(isActive)}>
+            <div className="nav-icon"><Users size={16} /></div>
+            Users
           </NavLink>
         )}
       </nav>
 
-      {/* User */}
-      <div className="border-t border-gray-100 pt-3 mt-2">
-        <div className="flex items-center gap-2.5 px-2 mb-2">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
-            {profile ? initials(profile.name) : '?'}
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-xs font-medium text-gray-800">{profile?.name ?? '…'}</p>
-            <p className="text-[10px] text-gray-400 capitalize">{profile?.role}</p>
+      <div className="sidebar-bottom">
+        <div className="sidebar-user">
+          <div className="avatar">{profile ? initials(profile.name) : '??'}</div>
+          <div className="user-info">
+            <div className="user-name">{profile?.name ?? '…'}</div>
+            <div className="user-role">{profile?.role}</div>
           </div>
         </div>
-        <button
-          onClick={handleSignOut}
-          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition-colors"
-        >
-          <LogOut size={14} /> Log out
-        </button>
+        <div className="logout-btn" onClick={handleSignOut}><LogOut size={14} />&nbsp;Sign out</div>
       </div>
-    </aside>
+    </div>
   )
 }

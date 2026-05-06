@@ -13,9 +13,9 @@ function AppLayout() {
   if (loading) return <div className="flex h-screen items-center justify-center"><Spinner className="text-blue-500" /></div>
   if (!user) return <Navigate to="/login" replace />
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="app">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto">
+      <main className="main">
         <Outlet />
       </main>
     </div>

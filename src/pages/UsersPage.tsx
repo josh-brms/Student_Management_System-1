@@ -47,57 +47,55 @@ export function UsersPage() {
   }
 
   return (
-    <div className="p-6 max-w-4xl">
-      <div className="mb-5 flex items-center justify-between">
+    <div className="content">
+      <div className="section-header">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Users</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{users.length} registered users</p>
+          <div className="section-title">Users</div>
+          <div className="stat-sub">{users.length} registered users</div>
         </div>
         <Button variant="primary" onClick={() => setShowModal(true)}>
           <UserPlus size={14} /> New user
         </Button>
       </div>
 
-      <Card>
+      <div className="card">
         {loading ? (
           <div className="flex justify-center py-16"><Spinner className="text-blue-500" /></div>
         ) : (
-          <table className="w-full text-sm">
+          <table className="task-table">
             <thead>
-              <tr className="border-b border-gray-100">
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wide">User</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wide">Role</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wide">Joined</th>
-                <th className="px-4 py-3"></th>
+              <tr>
+                <th>User</th>
+                <th>Role</th>
+                <th>Joined</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {users.map(u => (
-                <tr key={u.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${u.role === 'admin' ? 'bg-violet-100 text-violet-700' : 'bg-blue-100 text-blue-700'}`}>
-                        {initials(u.name)}
-                      </div>
+                <tr key={u.id}>
+                  <td>
+                    <div style={{display:'flex',alignItems:'center',gap:10}}>
+                      <div className={`avatar`} style={{background: u.role === 'admin' ? '#1C1B18' : undefined, color: u.role === 'admin' ? '#fff' : undefined}}>{initials(u.name)}</div>
                       <div>
-                        <p className="font-medium text-gray-800 leading-none">{u.name}</p>
-                        {u.id === currentProfile?.id && (
-                          <span className="text-[10px] text-gray-400 mt-0.5 inline-block">You</span>
-                        )}
+                        <div style={{fontWeight:500,fontSize:14}}>{u.name}</div>
+                        {u.id === currentProfile?.id && <div className="user-role" style={{marginTop:2}}>You</div>}
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3"><Badge value={u.role} /></td>
-                  <td className="px-4 py-3 text-gray-400 text-xs">{formatDate(u.created_at)}</td>
-                  <td className="px-4 py-3 text-right">
-                    <Button variant="ghost" size="sm" onClick={() => setEditUser(u)}>Edit</Button>
+                  <td><Badge value={u.role} /></td>
+                  <td><div className="due-date">{formatDate(u.created_at)}</div></td>
+                  <td>
+                    <div className="row-actions">
+                      <Button variant="ghost" size="sm" onClick={() => setEditUser(u)}>Edit</Button>
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
-      </Card>
+      </div>
 
       {showModal && <CreateUserModal onSave={handleCreate} onClose={() => setShowModal(false)} />}
       {editUser && <EditUserModal user={editUser} onSave={handleEditSave} onClose={() => setEditUser(null)} />}
@@ -124,7 +122,7 @@ function CreateUserModal({ onSave, onClose }: { onSave: (v: UserFormValues) => P
   }
 
   return (
-    <Modal title="New user" onClose={onClose}>
+    <Modal title="Add new user" sub="Create a student or admin account" width="440px" onClose={onClose}>
       <div className="space-y-4">
         <FormField label="Full name"><Input value={form.name} onChange={e => set('name', e.target.value)} placeholder="Juan dela Cruz" /></FormField>
         <FormField label="Email"><Input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="user@gmail.com" /></FormField>
@@ -158,7 +156,7 @@ function EditUserModal({ user, onSave, onClose }: { user: Profile; onSave: (v: P
   }
 
   return (
-    <Modal title="Edit user" onClose={onClose}>
+    <Modal title="Edit user" sub="Update user details and role" width="440px" onClose={onClose}>
       <div className="space-y-4">
         <FormField label="Full name"><Input value={name} onChange={e => setName(e.target.value)} /></FormField>
         <FormField label="Role">

@@ -22,13 +22,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
 
+  function formatAuthError(error: unknown) {
+    if (error instanceof Error && error.message) {
+      return error.message
+    }
+
+    return 'Unable to reach Supabase. Check your Vercel environment variables and Supabase project URL.'
+  }
+
   async function fetchProfile(userId: string) {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
-    if (!error && data) setProfile(data as Profile)
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
+      if (!error && data) setProfile(data as Profile)
+    } catch {
+      setProfile(null)
+    }
   }
 
   async function refreshProfile() {
@@ -37,12 +49,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Restore session on mount
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id).finally(() => setLoading(false))
-      else setLoading(false)
-    })
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        setSession(session)
+        setUser(session?.user ?? null)
+        if (session?.user) fetchProfile(session.user.id).finally(() => setLoading(false))
+        else setLoading(false)
+      })
+      .catch(() => {
+        setLoading(false)
+      })
 
     // Subscribe to auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -56,17 +73,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   async function signIn(email: string, password: string) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    return { error: error?.message ?? null }
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      return { error: error?.message ?? null }
+    } catch (error) {
+      return { error: formatAuthError(error) }
+    }
   }
 
   async function signUp(email: string, password: string, name: string) {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { name } },
-    })
-    return { error: error?.message ?? null }
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { name } },
+      })
+      return { error: error?.message ?? null }
+    } catch (error) {
+      return { error: formatAuthError(error) }
+    }
   }
 
   async function signOut() {

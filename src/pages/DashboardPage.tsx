@@ -62,12 +62,10 @@ export function DashboardPage() {
   ]
 
   return (
-    <div className="p-6 max-w-4xl">
-      <div className="mb-6">
-        <h1 className="text-xl font-semibold text-gray-900">
-          Good day, {profile?.name?.split(' ')[0] ?? 'there'} 👋
-        </h1>
-        <p className="text-sm text-gray-500 mt-0.5">Here's an overview of your academic tasks.</p>
+    <div className="content">
+      <div style={{marginBottom: 18}}>
+        <h1 className="login-title">Good day, {profile?.name?.split(' ')[0] ?? 'there'} 👋</h1>
+        <p className="login-sub">Here's an overview of your academic tasks.</p>
       </div>
 
       {loading ? (
@@ -75,15 +73,13 @@ export function DashboardPage() {
       ) : (
         <>
           {/* Stats grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          <div className="stats-row">
             {statCards.map(s => (
-              <Card key={s.label} className="p-4">
-                <div className={`inline-flex rounded-lg p-2 mb-3 ${s.color}`}>
-                  <s.icon size={16} />
-                </div>
-                <p className="text-2xl font-semibold text-gray-900">{s.value}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
-              </Card>
+              <div key={s.label} className="stat-card">
+                <div className="stat-label">{s.label}</div>
+                <div className="stat-val">{s.value}</div>
+                <div className="stat-sub">{s.label.toLowerCase().includes('total') ? 'all tasks' : ''}</div>
+              </div>
             ))}
           </div>
 
@@ -104,20 +100,22 @@ export function DashboardPage() {
                 View all <ChevronRight size={12} />
               </Link>
             </div>
-            <div className="p-3 space-y-2">
+            <div style={{padding: 16}}>
               {recent.length === 0 ? (
-                <p className="py-8 text-center text-sm text-gray-400">No tasks yet. Create one to get started.</p>
+                <p style={{textAlign: 'center', color: 'var(--muted)', fontSize: 14}}>No tasks yet. Create one to get started.</p>
               ) : (
-                recent.map(task => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    onEdit={setEditTask}
-                    onDelete={handleDelete}
-                    onCycle={handleCycle}
-                    showOwner={isAdmin}
-                  />
-                ))
+                <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
+                  {recent.map(task => (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      onEdit={setEditTask}
+                      onDelete={handleDelete}
+                      onCycle={handleCycle}
+                      showOwner={isAdmin}
+                    />
+                  ))}
+                </div>
               )}
             </div>
           </Card>
@@ -127,6 +125,8 @@ export function DashboardPage() {
       {editTask && (
         <TaskModal task={editTask} onSave={handleEdit} onClose={() => setEditTask(null)} />
       )}
+
+      {/* Ensure page uses proper topbar styling if present */}
     </div>
   )
 }

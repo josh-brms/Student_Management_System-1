@@ -74,12 +74,12 @@ export function TasksPage() {
     }`
 
   return (
-    <div className="p-6 max-w-4xl">
+    <div className="content">
       {/* Header */}
-      <div className="mb-5 flex items-center justify-between">
+      <div className="section-header">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">{isAdmin ? 'All tasks' : 'My tasks'}</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{tasks.length} task{tasks.length !== 1 ? 's' : ''} found</p>
+          <div className="section-title">{isAdmin ? 'All tasks' : 'My tasks'}</div>
+          <div className="stat-sub">{tasks.length} task{tasks.length !== 1 ? 's' : ''} found</div>
         </div>
         <Button variant="primary" onClick={() => setShowModal(true)}>
           <Plus size={14} /> New task
@@ -87,39 +87,35 @@ export function TasksPage() {
       </div>
 
       {/* Filters */}
-      <Card className="p-3 mb-4">
-        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap gap-3">
-            <div className="flex gap-1">
-              {STATUS_TABS.map(s => (
-                <button key={s} className={tabClass(filter.status === s)} onClick={() => setFilterField('status', s)}>
-                  {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-1">
-              {TYPE_TABS.map(t => (
-                <button key={t} className={tabClass(filter.type === t)} onClick={() => setFilterField('type', t)}>
-                  {t === 'all' ? 'All types' : t.charAt(0).toUpperCase() + t.slice(1)}
-                </button>
-              ))}
-            </div>
+      <div className="card" style={{marginBottom: 12}}>
+        <div className="filter-row">
+          <div style={{display: 'flex', gap: 8}}>
+            {STATUS_TABS.map(s => (
+              <button key={s} className={`filter-chip ${filter.status === s ? 'active' : ''}`} onClick={() => setFilterField('status', s)}>
+                {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
+              </button>
+            ))}
+            <div className="filter-sep" />
+            {TYPE_TABS.map(t => (
+              <button key={t} className={`filter-chip ${filter.type === t ? 'active' : ''}`} onClick={() => setFilterField('type', t)}>
+                {t === 'all' ? 'All types' : t.charAt(0).toUpperCase() + t.slice(1)}
+              </button>
+            ))}
           </div>
-          <div className="relative">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+          <div style={{marginLeft: 'auto'}}>
             <Input
               value={filter.search}
               onChange={e => setFilterField('search', e.target.value)}
               placeholder="Search tasks…"
-              className="pl-7 w-44"
+              className="search-box"
             />
           </div>
         </div>
-      </Card>
+      </div>
 
       {/* Task list */}
       <Card>
-        <div className="p-3">
+        <div style={{padding: 16}}>
           {loading ? (
             <div className="flex justify-center py-16"><Spinner className="text-blue-500" /></div>
           ) : tasks.length === 0 ? (
@@ -161,6 +157,8 @@ export function TasksPage() {
 
       {showModal && <TaskModal onSave={handleCreate} onClose={() => setShowModal(false)} />}
       {editTask && <TaskModal task={editTask} onSave={handleEdit} onClose={() => setEditTask(null)} />}
+
+      {/* Modals use design subtitles and widths */}
     </div>
   )
 }

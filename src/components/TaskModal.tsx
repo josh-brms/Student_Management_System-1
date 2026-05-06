@@ -45,7 +45,7 @@ export function TaskModal({ task, onSave, onClose }: Props) {
   }
 
   return (
-    <Modal title={task ? 'Edit task' : 'New task'} onClose={onClose}>
+    <Modal title={task ? 'Edit task' : 'New task'} sub={task ? 'Update the details of this task' : 'Add a new academic task to your list'} onClose={onClose}>
       <div className="space-y-4">
         <FormField label="Title" error={error && !form.title.trim() ? error : undefined}>
           <Input value={form.title} onChange={e => set('title', e.target.value)} placeholder="Task title" />
