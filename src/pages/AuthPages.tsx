@@ -4,6 +4,19 @@ import { GraduationCap } from 'lucide-react'
 import { useAuth } from '../lib/AuthContext'
 import { Button, Input, FormField } from '../components/ui'
 
+function normalizeEmail(email: string) {
+  return email.trim().toLowerCase()
+}
+
+function isAllowedEmailDomain(email: string) {
+  const normalized = normalizeEmail(email)
+  const atIndex = normalized.lastIndexOf('@')
+  if (atIndex < 0) return false
+
+  const domain = normalized.slice(atIndex + 1)
+  return domain.endsWith('.edu') || domain === 'gmail.com'
+}
+
 // ─── Login ────────────────────────────────────────────────────────────────────
 export function LoginPage() {
   const { signIn } = useAuth()
@@ -21,7 +34,7 @@ export function LoginPage() {
       return
     }
     setLoading(true)
-    const { error } = await signIn(email, password)
+    const { error } = await signIn(normalizeEmail(email), password)
     setLoading(false)
     if (error) { setError(error); return }
     navigate('/dashboard')
@@ -69,8 +82,12 @@ export function RegisterPage() {
     }
     if (password !== confirm) { setError('Passwords do not match.'); return }
     if (password.length < 6) { setError('Password must be at least 6 characters.'); return }
+    if (!isAllowedEmailDomain(email)) {
+      setError('Use a .edu email address or a gmail.com address.')
+      return
+    }
     setLoading(true)
-    const { error } = await signUp(email, password, name)
+    const { error } = await signUp(normalizeEmail(email), password, name)
     setLoading(false)
     if (error) { setError(error); return }
     navigate('/dashboard')
