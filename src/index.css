@@ -129,6 +129,12 @@ html, body, #root {
   border-color: var(--text);
 }
 
+.field input::placeholder,
+.field textarea::placeholder {
+  color: #9CA3AF;
+  opacity: 1;
+}
+
 .btn-primary {
   width: 100%;
   height: 40px;

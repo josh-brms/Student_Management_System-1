@@ -19,8 +19,8 @@ function isAllowedEmailDomain(email: string) {
 export function LoginPage() {
   const { signIn } = useAuth()
   const navigate = useNavigate()
-  const [email, setEmail] = useState('student@dwcl.edu')
-  const [password, setPassword] = useState('password')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -83,8 +83,8 @@ export function LoginPage() {
 export function AdminLoginPage() {
   const { signIn } = useAuth()
   const navigate = useNavigate()
-  const [email, setEmail] = useState('admin@dwcl.edu')
-  const [password, setPassword] = useState('password')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -112,7 +112,7 @@ export function AdminLoginPage() {
               type="email" 
               value={email} 
               onChange={e => setEmail(e.target.value)} 
-              placeholder="admin@school.edu" 
+              placeholder="admin@gmail.com" 
               required 
             />
           </div>
@@ -191,7 +191,7 @@ export function RegisterPage() {
               type="email" 
               value={email} 
               onChange={e => setEmail(e.target.value)} 
-              placeholder="you@school.edu" 
+              placeholder="you@gmail.com" 
               required 
             />
           </div>

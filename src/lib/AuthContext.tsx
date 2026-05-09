@@ -75,7 +75,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signIn(email: string, password: string) {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
-      return { error: error?.message ?? null }
+      if (!error) return { error: null }
+
+      if (error.message.toLowerCase().includes('invalid login credentials')) {
+        return { error: 'Incorrect password' }
+      }
+
+      return { error: error.message }
     } catch (error) {
       return { error: formatAuthError(error) }
     }
