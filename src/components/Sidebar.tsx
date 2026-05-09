@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, CheckSquare, Users, LogOut, Calendar } from 'lucide-react'
+import { LayoutDashboard, CheckSquare, Users, LogOut, Calendar, BarChart3 } from 'lucide-react'
 import { useAuth } from '../lib/AuthContext'
 import { ProfileEditModal } from './ProfileEditModal'
 
@@ -48,6 +48,15 @@ export function Sidebar() {
           >
             <div className="nav-icon"><Calendar size={16} /></div>
             Calendar
+          </NavLink>
+        )}
+        {isAdmin && (
+          <NavLink 
+            to="/analytics" 
+            className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}
+          >
+            <div className="nav-icon"><BarChart3 size={16} /></div>
+            Analytics
           </NavLink>
         )}
         {isAdmin && (

@@ -6,6 +6,7 @@ import { DashboardPage } from './pages/DashboardPage'
 import { TasksPage } from './pages/TasksPage'
 import { UsersPage } from './pages/UsersPage'
 import { CalendarPage } from './pages/CalendarPage'
+import { AnalyticsPage } from './pages/AnalyticsPage'
 import { Spinner } from './components/ui'
 
 // ─── Protected layout ─────────────────────────────────────────────────────────
@@ -55,6 +56,7 @@ export default function App() {
             <Route path="/calendar" element={<CalendarPage />} />
             <Route element={<AdminOnly />}>
               <Route path="/users" element={<UsersPage />} />
+              <Route path="/analytics" element={<AnalyticsPage />} />
             </Route>
           </Route>
 

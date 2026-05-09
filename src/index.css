@@ -23,6 +23,12 @@
   --low-text: #3730A3;
   --overdue-bg: #FDECEA;
   --overdue-text: #B91C1C;
+  --assignment-bg: #F3F0FF;
+  --assignment-text: #5B21B6;
+  --quiz-bg: #FFF0F9;
+  --quiz-text: #9D174D;
+  --project-bg: #F0FDF4;
+  --project-text: #166534;
 }
 
 * {
