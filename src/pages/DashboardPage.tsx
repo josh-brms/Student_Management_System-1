@@ -1,11 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { CheckCircle2, Clock, AlertCircle, LayoutList, ChevronRight } from 'lucide-react'
 import { useAuth } from '../lib/AuthContext'
-import { fetchTasks, fetchTaskStats } from '../lib/taskApi'
-import { Card, Spinner } from '../components/ui'
-import { TaskCard } from '../components/TaskCard'
-import { updateTask, deleteTask, cycleTaskStatus } from '../lib/taskApi'
+import { fetchTasks, fetchTaskStats, updateTask, deleteTask } from '../lib/taskApi'
+import { Topbar } from '../components/Topbar'
 import { TaskModal } from '../components/TaskModal'
 import type { Task, TaskFormValues } from '../types'
 
@@ -36,11 +32,6 @@ export function DashboardPage() {
 
   useEffect(() => { load() }, [user, isAdmin])
 
-  async function handleCycle(task: Task) {
-    await cycleTaskStatus(task)
-    load()
-  }
-
   async function handleEdit(values: TaskFormValues) {
     if (!editTask) return
     await updateTask(editTask.id, values)
@@ -54,79 +45,105 @@ export function DashboardPage() {
     load()
   }
 
-  const statCards = [
-    { label: 'Total tasks', value: stats?.total ?? 0, icon: LayoutList, color: 'text-gray-600 bg-gray-100' },
-    { label: 'Pending', value: stats?.pending ?? 0, icon: Clock, color: 'text-amber-600 bg-amber-50' },
-    { label: 'Ongoing', value: stats?.ongoing ?? 0, icon: AlertCircle, color: 'text-blue-600 bg-blue-50' },
-    { label: 'Done', value: stats?.done ?? 0, icon: CheckCircle2, color: 'text-emerald-600 bg-emerald-50' },
-  ]
+  function getStatusBadgeClass(status: string): string {
+    return `badge badge-${status}`
+  }
+
+  function getPriorityBadgeClass(priority: string): string {
+    return `badge badge-${priority === 'high' ? 'high' : priority === 'medium' ? 'medium' : 'low'}`
+  }
+
+  function getTypeBadgeClass(type: string): string {
+    return `badge badge-${type}`
+  }
 
   return (
-    <div className="content">
-      <div style={{marginBottom: 18}}>
-        <h1 className="login-title">Good day, {profile?.name?.split(' ')[0] ?? 'there'} 👋</h1>
-        <p className="login-sub">Here's an overview of your academic tasks.</p>
+    <div className="main">
+      <Topbar title={isAdmin ? 'System Overview' : 'My Tasks'} />
+      <div className="content">
+        <div style={{marginBottom: 28}}>
+          <h1 className="login-title">Good day, {profile?.name?.split(' ')[0] ?? 'there'} 👋</h1>
+          <p className="login-sub">Here's an overview of your academic tasks.</p>
+        </div>
+
+        {/* Stats row */}
+        <div className="stats-row">
+          <div className="stat-card">
+            <div className="stat-label">Total</div>
+            <div className="stat-val">{stats?.total ?? 0}</div>
+            <div className="stat-sub">all tasks</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Pending</div>
+            <div className="stat-val" style={{color: 'var(--pending-text)'}}>{stats?.pending ?? 0}</div>
+            <div className="stat-sub">not started</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Ongoing</div>
+            <div className="stat-val" style={{color: 'var(--ongoing-text)'}}>{stats?.ongoing ?? 0}</div>
+            <div className="stat-sub">in progress</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Done</div>
+            <div className="stat-val" style={{color: 'var(--done-text)'}}>{stats?.done ?? 0}</div>
+            <div className="stat-sub">completed</div>
+          </div>
+        </div>
+
+        {/* Recent tasks table */}
+        {loading ? (
+          <div style={{textAlign: 'center', padding: '60px 20px', color: 'var(--muted)'}}>
+            <div className="spinner" style={{margin: '0 auto 16px'}}></div>
+            <p>Loading...</p>
+          </div>
+        ) : recent.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">○</div>
+            <div className="empty-text">No tasks yet</div>
+          </div>
+        ) : (
+          <table className="task-table">
+            <thead>
+              <tr>
+                <th>Task</th>
+                <th>Type</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Due date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recent.map(t => {
+                const today = new Date()
+                const due = t.due_date ? new Date(t.due_date) : new Date()
+                const overdue = t.due_date && due < today && t.status !== 'done'
+                const dueFmt = due.toLocaleDateString('en-PH', {month: 'short', day: 'numeric'})
+                return (
+                  <tr key={t.id}>
+                    <td>
+                      <div className="task-name">{t.title}</div>
+                      {t.description && <div className="task-desc">{t.description}</div>}
+                    </td>
+                    <td><span className={getTypeBadgeClass(t.type)}>{t.type}</span></td>
+                    <td><span className={getPriorityBadgeClass(t.priority)}>{t.priority}</span></td>
+                    <td><span className={getStatusBadgeClass(t.status)}>{t.status}</span></td>
+                    <td><div className={`due-date ${overdue ? 'due-overdue' : ''}`}>{dueFmt}{overdue ? ' · overdue' : ''}</div></td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center h-40"><Spinner className="text-blue-500" /></div>
-      ) : (
-        <>
-          {/* Stats grid */}
-          <div className="stats-row">
-            {statCards.map(s => (
-              <div key={s.label} className="stat-card">
-                <div className="stat-label">{s.label}</div>
-                <div className="stat-val">{s.value}</div>
-                <div className="stat-sub">{s.label.toLowerCase().includes('total') ? 'all tasks' : ''}</div>
-              </div>
-            ))}
-          </div>
-
-          {stats && stats.overdue > 0 && (
-            <div className="mb-4 flex items-center gap-2.5 rounded-xl bg-red-50 ring-1 ring-red-200 px-4 py-3">
-              <AlertCircle size={15} className="text-red-500 shrink-0" />
-              <p className="text-sm text-red-700">
-                You have <strong>{stats.overdue}</strong> overdue task{stats.overdue > 1 ? 's' : ''}. Review them soon.
-              </p>
-            </div>
-          )}
-
-          {/* Recent tasks */}
-          <Card>
-            <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-gray-100">
-              <h2 className="text-sm font-semibold text-gray-700">Recent tasks</h2>
-              <Link to="/tasks" className="flex items-center gap-0.5 text-xs text-blue-600 hover:underline">
-                View all <ChevronRight size={12} />
-              </Link>
-            </div>
-            <div style={{padding: 16}}>
-              {recent.length === 0 ? (
-                <p style={{textAlign: 'center', color: 'var(--muted)', fontSize: 14}}>No tasks yet. Create one to get started.</p>
-              ) : (
-                <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
-                  {recent.map(task => (
-                    <TaskCard
-                      key={task.id}
-                      task={task}
-                      onEdit={setEditTask}
-                      onDelete={handleDelete}
-                      onCycle={handleCycle}
-                      showOwner={isAdmin}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </Card>
-        </>
-      )}
-
       {editTask && (
-        <TaskModal task={editTask} onSave={handleEdit} onClose={() => setEditTask(null)} />
+        <TaskModal 
+          task={editTask}
+          onSave={handleEdit}
+          onDelete={handleDelete}
+          onClose={() => setEditTask(null)}
+        />
       )}
-
-      {/* Ensure page uses proper topbar styling if present */}
     </div>
   )
 }

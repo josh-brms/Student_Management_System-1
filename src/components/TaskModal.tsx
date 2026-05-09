@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Modal, FormField, Input, Select, Textarea, Button } from './ui'
+import { Trash2 } from 'lucide-react'
 import type { Task, TaskFormValues } from '../types'
 
 interface Props {
   task?: Task | null
   onSave: (values: TaskFormValues) => Promise<void>
+  onDelete?: (task: Task) => void
   onClose: () => void
 }
 
@@ -13,7 +14,7 @@ const defaultForm: TaskFormValues = {
   priority: 'medium', status: 'pending', due_date: '',
 }
 
-export function TaskModal({ task, onSave, onClose }: Props) {
+export function TaskModal({ task, onSave, onDelete, onClose }: Props) {
   const [form, setForm] = useState<TaskFormValues>(
     task ? {
       title: task.title,
@@ -31,7 +32,8 @@ export function TaskModal({ task, onSave, onClose }: Props) {
     setForm(f => ({ ...f, [k]: v }))
   }
 
-  async function handleSubmit() {
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
     if (!form.title.trim()) { setError('Title is required.'); return }
     setLoading(true)
     try {
@@ -45,55 +47,87 @@ export function TaskModal({ task, onSave, onClose }: Props) {
   }
 
   return (
-    <Modal title={task ? 'Edit task' : 'New task'} sub={task ? 'Update the details of this task' : 'Add a new academic task to your list'} onClose={onClose}>
-      <div className="space-y-4">
-        <FormField label="Title" error={error && !form.title.trim() ? error : undefined}>
-          <Input value={form.title} onChange={e => set('title', e.target.value)} placeholder="Task title" />
-        </FormField>
+    <div className="modal-overlay open">
+      <div className="modal">
+        <div className="modal-title">{task ? 'Edit task' : 'Create new task'}</div>
+        <div className="modal-sub">{task ? 'Update the details of this task' : 'Add a new academic task to your list'}</div>
+        
+        <form onSubmit={handleSubmit}>
+          <div className="form-field">
+            <label>Task title *</label>
+            <input 
+              type="text"
+              required
+              value={form.title} 
+              onChange={e => set('title', e.target.value)} 
+              placeholder="e.g. Calculus Problem Set 3"
+            />
+          </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <FormField label="Type">
-            <Select value={form.type} onChange={e => set('type', e.target.value as any)}>
-              <option value="assignment">Assignment</option>
-              <option value="quiz">Quiz</option>
-              <option value="project">Project</option>
-            </Select>
-          </FormField>
-          <FormField label="Priority">
-            <Select value={form.priority} onChange={e => set('priority', e.target.value as any)}>
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </Select>
-          </FormField>
-        </div>
+          <div className="form-row">
+            <div className="form-field">
+              <label>Type *</label>
+              <select value={form.type} onChange={e => set('type', e.target.value as any)}>
+                <option value="assignment">Assignment</option>
+                <option value="quiz">Quiz</option>
+                <option value="project">Project</option>
+              </select>
+            </div>
+            <div className="form-field">
+              <label>Priority *</label>
+              <select value={form.priority} onChange={e => set('priority', e.target.value as any)}>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+            </div>
+          </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <FormField label="Status">
-            <Select value={form.status} onChange={e => set('status', e.target.value as any)}>
-              <option value="pending">Pending</option>
-              <option value="ongoing">Ongoing</option>
-              <option value="done">Done</option>
-            </Select>
-          </FormField>
-          <FormField label="Due date">
-            <Input type="date" value={form.due_date} onChange={e => set('due_date', e.target.value)} />
-          </FormField>
-        </div>
+          <div className="form-row">
+            <div className="form-field">
+              <label>Due date *</label>
+              <input 
+                type="date" 
+                required
+                value={form.due_date} 
+                onChange={e => set('due_date', e.target.value)} 
+              />
+            </div>
+            <div className="form-field">
+              <label>Status</label>
+              <select value={form.status} onChange={e => set('status', e.target.value as any)}>
+                <option value="pending">Pending</option>
+                <option value="ongoing">Ongoing</option>
+                <option value="done">Done</option>
+              </select>
+            </div>
+          </div>
 
-        <FormField label="Description">
-          <Textarea value={form.description} onChange={e => set('description', e.target.value)} placeholder="Optional description..." />
-        </FormField>
+          <div className="form-field">
+            <label>Description</label>
+            <textarea 
+              value={form.description} 
+              onChange={e => set('description', e.target.value)} 
+              placeholder="Optional details about this task..."
+            />
+          </div>
 
-        {error && form.title.trim() && <p className="text-xs text-red-600">{error}</p>}
+          {error && <p style={{fontSize: '12px', color: '#B91C1C', marginBottom: '12px'}}>{error}</p>}
 
-        <div className="flex justify-end gap-2 pt-1">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button variant="primary" onClick={handleSubmit} disabled={loading}>
-            {loading ? 'Saving…' : task ? 'Save changes' : 'Create task'}
-          </Button>
-        </div>
+          <div className="modal-footer">
+            <button type="button" className="btn-cancel" onClick={onClose}>Cancel</button>
+            {task && onDelete && (
+              <button type="button" className="row-btn danger" onClick={() => onDelete(task)}>
+                <Trash2 size={14} style={{marginRight: 4}} /> Delete
+              </button>
+            )}
+            <button type="submit" className="btn-save" disabled={loading}>
+              {loading ? 'Saving…' : task ? 'Save changes' : 'Save task'}
+            </button>
+          </div>
+        </form>
       </div>
-    </Modal>
+    </div>
   )
 }
+
