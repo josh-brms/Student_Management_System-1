@@ -1,23 +1,23 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { AuthProvider, useAuth } from './lib/AuthContext'
 import { Sidebar } from './components/Sidebar'
-import { LoginPage, RegisterPage } from './pages/AuthPages'
+import { LoginPage, AdminLoginPage, RegisterPage } from './pages/AuthPages'
 import { DashboardPage } from './pages/DashboardPage'
 import { TasksPage } from './pages/TasksPage'
 import { UsersPage } from './pages/UsersPage'
+import { CalendarPage } from './pages/CalendarPage'
+import { AnalyticsPage } from './pages/AnalyticsPage'
 import { Spinner } from './components/ui'
 
 // ─── Protected layout ─────────────────────────────────────────────────────────
 function AppLayout() {
   const { user, loading } = useAuth()
-  if (loading) return <div className="flex h-screen items-center justify-center"><Spinner className="text-blue-500" /></div>
+  if (loading) return <div style={{display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center'}}><div className="spinner"></div></div>
   if (!user) return <Navigate to="/login" replace />
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="app">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto">
-        <Outlet />
-      </main>
+      <Outlet />
     </div>
   )
 }
@@ -45,6 +45,7 @@ export default function App() {
           {/* Guest routes */}
           <Route element={<GuestOnly />}>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/admin/login" element={<AdminLoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
           </Route>
 
@@ -52,8 +53,10 @@ export default function App() {
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/tasks" element={<TasksPage />} />
+            <Route path="/calendar" element={<CalendarPage />} />
             <Route element={<AdminOnly />}>
               <Route path="/users" element={<UsersPage />} />
+              <Route path="/analytics" element={<AnalyticsPage />} />
             </Route>
           </Route>
 
