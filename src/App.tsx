@@ -6,6 +6,7 @@ import { DashboardPage } from './pages/DashboardPage'
 import { TasksPage } from './pages/TasksPage'
 import { UsersPage } from './pages/UsersPage'
 import { CalendarPage } from './pages/CalendarPage'
+import { ProfilePage } from './pages/ProfilePage'
 import { AnalyticsPage } from './pages/AnalyticsPage'
 import { Spinner } from './components/ui'
 
@@ -54,6 +55,7 @@ export default function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/tasks" element={<TasksPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
             <Route element={<AdminOnly />}>
               <Route path="/users" element={<UsersPage />} />
               <Route path="/analytics" element={<AnalyticsPage />} />

@@ -1,22 +1,15 @@
-import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, CheckSquare, Users, Calendar, BarChart3, UserCircle2 } from 'lucide-react'
+import { LayoutDashboard, CheckSquare, Users, Calendar, BarChart3, UserCircle2, LogOut } from 'lucide-react'
 import { useAuth } from '../lib/AuthContext'
-import { ProfileEditModal } from './ProfileEditModal'
 
 export function Sidebar() {
   const { profile, signOut } = useAuth()
   const navigate = useNavigate()
-  const [showProfileModal, setShowProfileModal] = useState(false)
   const isAdmin = profile?.role === 'admin'
 
   async function handleSignOut() {
     await signOut()
     navigate('/login')
-  }
-
-  function initials(name: string) {
-    return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
   }
 
   return (
@@ -72,7 +65,7 @@ export function Sidebar() {
 
       <div className="sidebar-bottom">
         <button
-          onClick={() => setShowProfileModal(true)}
+          onClick={() => navigate('/profile')}
           className="sidebar-user"
           style={{ 
             background: 'none', 
@@ -88,28 +81,20 @@ export function Sidebar() {
             transition: 'background-color 0.2s'
           }}
         >
-          <div className="avatar">{profile ? initials(profile.name) : '??'}</div>
+          <div className="avatar">{profile ? profile.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : '??'}</div>
           <div className="user-info">
             <div className="user-name">{profile?.name ?? '…'}</div>
             <div className="user-role">{profile?.role}</div>
           </div>
         </button>
         <button 
-          onClick={() => setShowProfileModal(true)}
+          onClick={handleSignOut}
           style={{background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6}}
           className="logout-btn"
         >
-          <UserCircle2 size={14} />Profile
+          <LogOut size={14} />Sign out
         </button>
       </div>
-
-      {profile && (
-        <ProfileEditModal
-          isOpen={showProfileModal}
-          profile={profile}
-          onClose={() => setShowProfileModal(false)}
-        />
-      )}
     </div>
   )
 }
