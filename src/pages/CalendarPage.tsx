@@ -9,9 +9,12 @@ export function CalendarPage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   
-  const today = new Date(2026, 4, 9) // May 9, 2026
-  const currentYear = today.getFullYear()
-  const currentMonth = today.getMonth()
+  const today = new Date()
+  // normalize to start of day for accurate comparisons
+  const todayStart = new Date(today)
+  todayStart.setHours(0, 0, 0, 0)
+  const currentYear = todayStart.getFullYear()
+  const currentMonth = todayStart.getMonth()
 
   async function load() {
     if (!user) return
@@ -42,7 +45,7 @@ export function CalendarPage() {
     tasks
       .filter(t => {
         const dueDate = t.due_date ? new Date(t.due_date) : null
-        return dueDate && dueDate < today && dueDate.getFullYear() === currentYear && dueDate.getMonth() === currentMonth
+        return dueDate && dueDate < todayStart && dueDate.getFullYear() === currentYear && dueDate.getMonth() === currentMonth
       })
       .map(t => t.due_date ? new Date(t.due_date).getDate() : 0)
       .filter(d => d > 0)
@@ -90,7 +93,7 @@ export function CalendarPage() {
             {calendarDays.map((day, idx) => {
               const hasTask = day && taskDates.has(day)
               const isOverdue = day && overdueDates.has(day)
-              const isToday = day === today.getDate()
+              const isToday = day === todayStart.getDate()
               
               return (
                 <div
