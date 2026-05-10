@@ -6,13 +6,12 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase()
 }
 
-function isAllowedEmailDomain(email: string) {
+function isGmailEmail(email: string) {
   const normalized = normalizeEmail(email)
   const atIndex = normalized.lastIndexOf('@')
   if (atIndex < 0) return false
-
   const domain = normalized.slice(atIndex + 1)
-  return domain.endsWith('.edu') || domain === 'gmail.com'
+  return domain === 'gmail.com'
 }
 
 // ─── Login (Student Only) ─────────────────────────────────────────────────────
@@ -27,6 +26,10 @@ export function LoginPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError('')
+    if (!isGmailEmail(email)) {
+      setError('Email must be a Gmail account (@gmail.com)')
+      return
+    }
     setLoading(true)
     const { error } = await signIn(normalizeEmail(email), password)
     setLoading(false)
@@ -154,12 +157,12 @@ export function RegisterPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError('')
-    if (password !== confirm) { setError('Passwords do not match.'); return }
-    if (password.length < 8) { setError('Password must be at least 8 characters.'); return }
-    if (!isAllowedEmailDomain(email)) {
-      setError('Use a .edu email address or a gmail.com address.')
+    if (!isGmailEmail(email)) {
+      setError('Email must be a Gmail account (@gmail.com)')
       return
     }
+    if (password !== confirm) { setError('Passwords do not match.'); return }
+    if (password.length < 6) { setError('Password must be at least 6 characters.'); return }
     setLoading(true)
     const { error } = await signUp(normalizeEmail(email), password, name)
     setLoading(false)
