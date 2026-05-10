@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, CheckSquare, Users, LogOut, Calendar, BarChart3 } from 'lucide-react'
+import { LayoutDashboard, CheckSquare, Users, Calendar, BarChart3, UserCircle2 } from 'lucide-react'
 import { useAuth } from '../lib/AuthContext'
 import { ProfileEditModal } from './ProfileEditModal'
 
@@ -95,11 +95,11 @@ export function Sidebar() {
           </div>
         </button>
         <button 
-          onClick={handleSignOut}
+          onClick={() => setShowProfileModal(true)}
           style={{background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6}}
           className="logout-btn"
         >
-          <LogOut size={14} />Sign out
+          <UserCircle2 size={14} />Profile
         </button>
       </div>
 
