@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Edit2, Trash2, CheckCircle2, Circle } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useAuth } from '../lib/AuthContext'
 import { fetchTasks, createTask, updateTask, deleteTask } from '../lib/taskApi'
 import { Topbar } from '../components/Topbar'
@@ -10,46 +10,47 @@ const STATUS_TABS = ['all', 'pending', 'ongoing', 'done'] as const
 const TYPE_TABS   = ['all', 'assignment', 'quiz', 'project'] as const
 
 export function TasksPage() {
-  const { user, profile } = useAuth()
+  const { profile } = useAuth()
   const isAdmin = profile?.role === 'admin'
+  const userId  = profile?.user_id
 
-  const [tasks, setTasks] = useState<Task[]>([])
-  const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState<TaskFilter>({ status: 'all', type: 'all', search: '' })
-  const [showModal, setShowModal] = useState(false)
-  const [editTask, setEditTask] = useState<Task | null>(null)
+  const [tasks,        setTasks]        = useState<Task[]>([])
+  const [loading,      setLoading]      = useState(true)
+  const [filter,       setFilter]       = useState<TaskFilter>({ status: 'all', type: 'all', subject_id: 'all', search: '' })
+  const [showModal,    setShowModal]    = useState(false)
+  const [editTask,     setEditTask]     = useState<Task | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Task | null>(null)
 
   const load = useCallback(async () => {
-    if (!user) return
+    if (!userId) return
     setLoading(true)
     try {
-      const data = await fetchTasks(user.id, isAdmin, filter)
+      const data = await fetchTasks(userId, isAdmin, filter)
       setTasks(data)
     } finally {
       setLoading(false)
     }
-  }, [user, isAdmin, filter])
+  }, [userId, isAdmin, filter])
 
   useEffect(() => { load() }, [load])
 
   async function handleCreate(values: TaskFormValues) {
-    if (!user) return
-    await createTask(user.id, values)
+    if (!userId) return
+    await createTask(userId, values)
     setShowModal(false)
     load()
   }
 
   async function handleEdit(values: TaskFormValues) {
-    if (!editTask) return
-    await updateTask(editTask.id, values)
+    if (!editTask || !userId) return
+    await updateTask(editTask.task_id, userId, values)
     setEditTask(null)
     load()
   }
 
   async function handleDelete() {
-    if (!deleteTarget) return
-    await deleteTask(deleteTarget.id)
+    if (!deleteTarget || !userId) return
+    await deleteTask(deleteTarget.task_id, userId)
     setDeleteTarget(null)
     load()
   }
@@ -74,14 +75,13 @@ export function TasksPage() {
     <div className="main">
       <Topbar title={isAdmin ? 'All tasks' : 'My tasks'} onNewClick={() => setShowModal(true)} showNewButton />
       <div className="content">
-        {/* Filters */}
         <div className="card" style={{marginBottom: 20, padding: '16px 20px'}}>
           <div className="filter-row">
             <div>
               {STATUS_TABS.map(s => (
-                <button 
-                  key={s} 
-                  className={`filter-chip ${filter.status === s ? 'active' : ''}`} 
+                <button
+                  key={s}
+                  className={`filter-chip ${filter.status === s ? 'active' : ''}`}
                   onClick={() => setFilterField('status', s)}
                 >
                   {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
@@ -91,16 +91,16 @@ export function TasksPage() {
             <div className="filter-sep" style={{margin: '0 8px'}} />
             <div>
               {TYPE_TABS.map(t => (
-                <button 
-                  key={t} 
-                  className={`filter-chip ${filter.type === t ? 'active' : ''}`} 
+                <button
+                  key={t}
+                  className={`filter-chip ${filter.type === t ? 'active' : ''}`}
                   onClick={() => setFilterField('type', t)}
                 >
                   {t === 'all' ? 'All types' : t.charAt(0).toUpperCase() + t.slice(1)}
                 </button>
               ))}
             </div>
-            <input 
+            <input
               type="text"
               value={filter.search}
               onChange={e => setFilterField('search', e.target.value)}
@@ -111,7 +111,6 @@ export function TasksPage() {
           </div>
         </div>
 
-        {/* Task table */}
         {loading ? (
           <div style={{textAlign: 'center', padding: '60px 20px', color: 'var(--muted)'}}>
             <div className="spinner" style={{margin: '0 auto 16px'}}></div>
@@ -144,7 +143,7 @@ export function TasksPage() {
                 const overdue = t.due_date && due < today && t.status !== 'done'
                 const dueFmt = due.toLocaleDateString('en-PH', {month: 'short', day: 'numeric', year: 'numeric'})
                 return (
-                  <tr key={t.id}>
+                  <tr key={t.task_id}>
                     <td>
                       <div className="task-name">{t.title}</div>
                       {t.description && <div className="task-desc">{t.description}</div>}
@@ -167,17 +166,15 @@ export function TasksPage() {
         )}
       </div>
 
-      {/* Create/Edit modal */}
       {(showModal || editTask) && (
-        <TaskModal 
+        <TaskModal
           task={editTask ?? undefined}
           onSave={editTask ? handleEdit : handleCreate}
-          onDelete={editTask ? (t) => { setDeleteTarget(t); setEditTask(null); } : undefined}
+          onDelete={editTask ? () => deleteTarget && handleDelete() : undefined}
           onClose={() => { setShowModal(false); setEditTask(null); }}
         />
       )}
 
-      {/* Delete confirmation modal */}
       {deleteTarget && (
         <div className="modal-overlay open">
           <div className="modal" style={{width: 320}}>

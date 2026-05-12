@@ -1,27 +1,32 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { AlertCircle, ChevronRight, CheckCircle2, Clock, LayoutList } from 'lucide-react'
 import { useAuth } from '../lib/AuthContext'
-import { fetchTasks, fetchTaskStats, updateTask, deleteTask } from '../lib/taskApi'
-import { Topbar } from '../components/Topbar'
+import { fetchTasks, fetchTaskStats, updateTask, deleteTask, cycleTaskStatus } from '../lib/taskApi'
+import { Card, Spinner } from '../components/ui'
+import { TaskCard } from '../components/TaskCard'
 import { TaskModal } from '../components/TaskModal'
 import type { Task, TaskFormValues } from '../types'
 
 interface Stats { total: number; pending: number; ongoing: number; done: number; overdue: number }
 
 export function DashboardPage() {
-  const { user, profile } = useAuth()
+  const { profile } = useAuth()
   const isAdmin = profile?.role === 'admin'
-  const [stats, setStats] = useState<Stats | null>(null)
-  const [recent, setRecent] = useState<Task[]>([])
-  const [loading, setLoading] = useState(true)
+  const userId = profile?.user_id
+
+  const [stats,    setStats]    = useState<Stats | null>(null)
+  const [recent,   setRecent]   = useState<Task[]>([])
+  const [loading,  setLoading]  = useState(true)
   const [editTask, setEditTask] = useState<Task | null>(null)
 
   async function load() {
-    if (!user) return
+    if (!userId) return
     setLoading(true)
     try {
       const [s, t] = await Promise.all([
-        fetchTaskStats(user.id, isAdmin),
-        fetchTasks(user.id, isAdmin, { status: 'all', type: 'all', search: '' }),
+        fetchTaskStats(userId, isAdmin),
+        fetchTasks(userId, isAdmin, { status: 'all', type: 'all', subject_id: 'all', search: '' }),
       ])
       setStats(s)
       setRecent(t.slice(0, 5))
@@ -30,43 +35,43 @@ export function DashboardPage() {
     }
   }
 
-  useEffect(() => { load() }, [user, isAdmin])
+  useEffect(() => { load() }, [userId, isAdmin])
+
+  async function handleCycle(task: Task) {
+    if (!userId) return
+    await cycleTaskStatus(task, userId)
+    load()
+  }
 
   async function handleEdit(values: TaskFormValues) {
-    if (!editTask) return
-    await updateTask(editTask.id, values)
+    if (!editTask || !userId) return
+    await updateTask(editTask.task_id, userId, values)
     setEditTask(null)
     load()
   }
 
   async function handleDelete(task: Task) {
+    if (!userId) return
     if (!confirm(`Delete "${task.title}"?`)) return
-    await deleteTask(task.id)
+    await deleteTask(task.task_id, userId)
     load()
   }
 
-  function getStatusBadgeClass(status: string): string {
-    return `badge badge-${status}`
-  }
-
-  function getPriorityBadgeClass(priority: string): string {
-    return `badge badge-${priority === 'high' ? 'high' : priority === 'medium' ? 'medium' : 'low'}`
-  }
-
-  function getTypeBadgeClass(type: string): string {
-    return `badge badge-${type}`
-  }
+  const statCards = [
+    { label: 'Total tasks', value: stats?.total   ?? 0, icon: LayoutList,  color: 'text-gray-600 bg-gray-100' },
+    { label: 'Pending',     value: stats?.pending  ?? 0, icon: Clock,        color: 'text-amber-600 bg-amber-50' },
+    { label: 'Ongoing',     value: stats?.ongoing  ?? 0, icon: AlertCircle,  color: 'text-blue-600 bg-blue-50' },
+    { label: 'Done',        value: stats?.done     ?? 0, icon: CheckCircle2, color: 'text-emerald-600 bg-emerald-50' },
+  ]
 
   return (
     <div className="main">
-      <Topbar title={isAdmin ? 'System Overview' : 'My Tasks'} />
       <div className="content">
         <div style={{marginBottom: 28}}>
           <h1 className="login-title">Good day, {profile?.name?.split(' ')[0] ?? 'there'} 👋</h1>
           <p className="login-sub">Here's an overview of your academic tasks.</p>
         </div>
 
-        {/* Stats row */}
         <div className="stats-row">
           <div className="stat-card">
             <div className="stat-label">Total</div>
@@ -90,7 +95,6 @@ export function DashboardPage() {
           </div>
         </div>
 
-        {/* Recent tasks table */}
         {loading ? (
           <div style={{textAlign: 'center', padding: '60px 20px', color: 'var(--muted)'}}>
             <div className="spinner" style={{margin: '0 auto 16px'}}></div>
@@ -119,14 +123,14 @@ export function DashboardPage() {
                 const overdue = t.due_date && due < today && t.status !== 'done'
                 const dueFmt = due.toLocaleDateString('en-PH', {month: 'short', day: 'numeric'})
                 return (
-                  <tr key={t.id}>
+                  <tr key={t.task_id}>
                     <td>
                       <div className="task-name">{t.title}</div>
                       {t.description && <div className="task-desc">{t.description}</div>}
                     </td>
-                    <td><span className={getTypeBadgeClass(t.type)}>{t.type}</span></td>
-                    <td><span className={getPriorityBadgeClass(t.priority)}>{t.priority}</span></td>
-                    <td><span className={getStatusBadgeClass(t.status)}>{t.status}</span></td>
+                    <td><span className="badge badge-type">{t.type}</span></td>
+                    <td><span className="badge badge-priority">{t.priority}</span></td>
+                    <td><span className="badge badge-status">{t.status}</span></td>
                     <td><div className={`due-date ${overdue ? 'due-overdue' : ''}`}>{dueFmt}{overdue ? ' · overdue' : ''}</div></td>
                   </tr>
                 )
@@ -137,7 +141,7 @@ export function DashboardPage() {
       </div>
 
       {editTask && (
-        <TaskModal 
+        <TaskModal
           task={editTask}
           onSave={handleEdit}
           onDelete={handleDelete}

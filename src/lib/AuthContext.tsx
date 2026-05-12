@@ -1,71 +1,59 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import type { User, Session } from '@supabase/supabase-js'
-import { supabase } from '../lib/supabase'
-import type { Profile } from '../types'
+import type { User as SupabaseUser, Session } from '@supabase/supabase-js'
+import { supabase } from './supabase'
+import type { User } from '../types'
 
 interface AuthContextValue {
-  user: User | null
-  session: Session | null
-  profile: Profile | null
-  loading: boolean
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>
-  signUp: (email: string, password: string, name: string) => Promise<{ error: string | null }>
-  signOut: () => Promise<void>
+  supabaseUser: SupabaseUser | null
+  session:      Session | null
+  profile:      User | null       // row from public.users
+  loading:      boolean
+  signIn:       (email: string, password: string) => Promise<{ error: string | null }>
+  signUp:       (email: string, password: string, name: string) => Promise<{ error: string | null }>
+  signOut:      () => Promise<void>
   refreshProfile: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [session, setSession] = useState<Session | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null)
+  const [session,      setSession]      = useState<Session | null>(null)
+  const [profile,      setProfile]      = useState<User | null>(null)
+  const [loading,      setLoading]      = useState(true)
 
-  function formatAuthError(error: unknown) {
-    if (error instanceof Error && error.message) {
-      return error.message
-    }
-
-    return 'Unable to reach Supabase. Check your Vercel environment variables and Supabase project URL.'
-  }
-
-  async function fetchProfile(userId: string) {
+  async function fetchProfile(email: string) {
     try {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('users')
         .select('*')
-        .eq('id', userId)
+        .eq('email', email)
         .single()
-      if (!error && data) setProfile(data as Profile)
+      if (!error && data) setProfile(data as User)
     } catch {
-      setProfile(null)
+      // profile not ready yet
     }
   }
 
   async function refreshProfile() {
-    if (user) await fetchProfile(user.id)
+    if (supabaseUser?.email) await fetchProfile(supabaseUser.email)
   }
 
   useEffect(() => {
-    // Restore session on mount
-    supabase.auth
-      .getSession()
-      .then(({ data: { session } }) => {
-        setSession(session)
-        setUser(session?.user ?? null)
-        if (session?.user) fetchProfile(session.user.id).finally(() => setLoading(false))
-        else setLoading(false)
-      })
-      .catch(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      setSupabaseUser(session?.user ?? null)
+      if (session?.user?.email) {
+        fetchProfile(session.user.email).finally(() => setLoading(false))
+      } else {
         setLoading(false)
-      })
+      }
+    })
 
-    // Subscribe to auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
+      setSupabaseUser(session?.user ?? null)
+      if (session?.user?.email) fetchProfile(session.user.email)
       else setProfile(null)
     })
 
@@ -75,29 +63,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signIn(email: string, password: string) {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (!error) return { error: null }
-
-      if (error.message.toLowerCase().includes('invalid login credentials')) {
-        return { error: 'Incorrect password' }
+      if (!error) {
+        await supabase.from('users').update({ last_login_at: new Date().toISOString() }).eq('email', email)
+        return { error: null }
       }
 
-      return { error: error.message }
-    } catch (error) {
-      return { error: formatAuthError(error) }
+      const message = error.message ?? 'Unable to sign in.'
+      if (message.toLowerCase().includes('invalid login credentials')) {
+        return { error: 'Incorrect password' }
+      }
+      return { error: message }
+    } catch (error: any) {
+      return { error: error?.message ?? 'Something went wrong.' }
     }
   }
 
   async function signUp(email: string, password: string, name: string) {
-    try {
-      const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
+      email, password,
+      options: { data: { name } },
+    })
+    if (error) return { error: error.message }
+
+    if (data.user) {
+      const { error: insertErr } = await supabase.from('users').insert({
+        name,
         email,
-        password,
-        options: { data: { name } },
+        password_hash: 'managed_by_supabase_auth',
+        role: 'student',
       })
-      return { error: error?.message ?? null }
-    } catch (error) {
-      return { error: formatAuthError(error) }
+      if (insertErr) return { error: insertErr.message }
     }
+
+    return { error: null }
   }
 
   async function signOut() {
@@ -106,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, signIn, signUp, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ supabaseUser, session, profile, loading, signIn, signUp, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   )
