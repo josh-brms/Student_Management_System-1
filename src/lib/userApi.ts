@@ -25,6 +25,8 @@ export async function updateUser(userId: number, values: Partial<Pick<User, 'nam
   return data as User
 }
 
+export const updateProfile = updateUser
+
 // ─── Toggle active ────────────────────────────────────────────────────────────
 export async function toggleUserActive(userId: number, is_active: boolean): Promise<void> {
   const { error } = await supabase
