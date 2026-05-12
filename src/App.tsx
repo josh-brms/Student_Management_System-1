@@ -1,39 +1,36 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { AuthProvider, useAuth } from './lib/AuthContext'
 import { Sidebar } from './components/Sidebar'
-import { LoginPage, RegisterPage } from './pages/AuthPages'
+import { LoginPage, AdminLoginPage, RegisterPage } from './pages/AuthPages'
 import { DashboardPage } from './pages/DashboardPage'
 import { TasksPage } from './pages/TasksPage'
 import { UsersPage } from './pages/UsersPage'
+import { CalendarPage } from './pages/CalendarPage'
+import { AnalyticsPage } from './pages/AnalyticsPage'
 import { Spinner } from './components/ui'
 
-// ─── Protected layout ─────────────────────────────────────────────────────────
 function AppLayout() {
-  const { user, loading } = useAuth()
+  const { supabaseUser, loading } = useAuth()
   if (loading) return <div className="flex h-screen items-center justify-center"><Spinner className="text-blue-500" /></div>
-  if (!user) return <Navigate to="/login" replace />
+  if (!supabaseUser) return <Navigate to="/login" replace />
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="app">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto">
-        <Outlet />
-      </main>
+      <Outlet />
     </div>
   )
 }
 
-// ─── Admin-only guard ─────────────────────────────────────────────────────────
 function AdminOnly() {
   const { profile } = useAuth()
   if (profile && profile.role !== 'admin') return <Navigate to="/dashboard" replace />
   return <Outlet />
 }
 
-// ─── Guest-only (redirect if already logged in) ───────────────────────────────
 function GuestOnly() {
-  const { user, loading } = useAuth()
+  const { supabaseUser, loading } = useAuth()
   if (loading) return <div className="flex h-screen items-center justify-center"><Spinner className="text-blue-500" /></div>
-  if (user) return <Navigate to="/dashboard" replace />
+  if (supabaseUser) return <Navigate to="/dashboard" replace />
   return <Outlet />
 }
 
@@ -42,22 +39,20 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Guest routes */}
           <Route element={<GuestOnly />}>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/admin/login" element={<AdminLoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
           </Route>
-
-          {/* Protected routes */}
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/tasks" element={<TasksPage />} />
+            <Route path="/calendar" element={<CalendarPage />} />
             <Route element={<AdminOnly />}>
               <Route path="/users" element={<UsersPage />} />
+              <Route path="/analytics" element={<AnalyticsPage />} />
             </Route>
           </Route>
-
-          {/* Fallback */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>

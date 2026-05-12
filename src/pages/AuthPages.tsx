@@ -1,8 +1,6 @@
 import { useState, FormEvent } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { GraduationCap } from 'lucide-react'
 import { useAuth } from '../lib/AuthContext'
-import { Button, Input, FormField } from '../components/ui'
 
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase()
@@ -16,7 +14,7 @@ function isGmailEmail(email: string) {
   return domain === 'gmail.com'
 }
 
-// ─── Login ────────────────────────────────────────────────────────────────────
+// ─── Login (Student Only) ─────────────────────────────────────────────────────
 export function LoginPage() {
   const { signIn } = useAuth()
   const navigate = useNavigate()
@@ -40,24 +38,108 @@ export function LoginPage() {
   }
 
   return (
-    <AuthLayout title="Welcome back" subtitle="Sign in to your STMS account">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <FormField label="Email">
-          <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@gmail.com" required />
-        </FormField>
-        <FormField label="Password">
-          <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required />
-        </FormField>
-        {error && <p className="text-xs text-red-600">{error}</p>}
-        <Button type="submit" variant="primary" className="w-full justify-center" disabled={loading}>
-          {loading ? 'Signing in…' : 'Sign in'}
-        </Button>
-        <p className="text-center text-xs text-gray-400">
-          Don't have an account?{' '}
-          <Link to="/register" className="text-blue-600 hover:underline">Create one</Link>
-        </p>
-      </form>
-    </AuthLayout>
+    <div className="auth-page">
+      <div className="login-card">
+        <div className="login-logo">TaskMate · Divine Word College</div>
+        <div className="login-title">Welcome back, Student</div>
+        <div className="login-sub">Sign in to manage your academic tasks</div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="field">
+            <label>Email address</label>
+            <input 
+              type="email" 
+              value={email} 
+              onChange={e => setEmail(e.target.value)} 
+              placeholder="you@school.edu" 
+              required 
+            />
+          </div>
+          <div className="field">
+            <label>Password</label>
+            <input 
+              type="password" 
+              value={password} 
+              onChange={e => setPassword(e.target.value)} 
+              placeholder="••••••••" 
+              required 
+            />
+          </div>
+          {error && <p style={{fontSize: '12px', color: '#B91C1C', marginBottom: '12px'}}>{error}</p>}
+          <button type="submit" className="btn-primary" disabled={loading}>
+            {loading ? 'Signing in…' : 'Sign in'}
+          </button>
+        </form>
+
+        <div className="login-footer">
+          No account? <Link to="/register" style={{textDecoration: 'none', color: 'inherit'}}>Register here</Link>
+        </div>
+        <div style={{marginTop: 16, paddingTop: 16, borderTop: '0.5px solid var(--border)', textAlign: 'center', fontSize: 12}}>
+          Are you an administrator? <Link to="/admin/login" style={{textDecoration: 'none', color: 'var(--ongoing-text)', fontWeight: 500}}>Sign in here</Link>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Admin Login ──────────────────────────────────────────────────────────────
+export function AdminLoginPage() {
+  const { signIn } = useAuth()
+  const navigate = useNavigate()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+    const { error } = await signIn(normalizeEmail(email), password)
+    setLoading(false)
+    if (error) { setError(error); return }
+    navigate('/users')
+  }
+
+  return (
+    <div className="auth-page">
+      <div className="login-card">
+        <div className="login-logo">TaskMate · Admin Panel</div>
+        <div className="login-title">Administrator Login</div>
+        <div className="login-sub">Sign in to manage users and tasks</div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="field">
+            <label>Email address</label>
+            <input 
+              type="email" 
+              value={email} 
+              onChange={e => setEmail(e.target.value)} 
+              placeholder="admin@gmail.com" 
+              required 
+            />
+          </div>
+          <div className="field">
+            <label>Password</label>
+            <input 
+              type="password" 
+              value={password} 
+              onChange={e => setPassword(e.target.value)} 
+              placeholder="••••••••" 
+              required 
+            />
+          </div>
+          {error && <p style={{fontSize: '12px', color: '#B91C1C', marginBottom: '12px'}}>{error}</p>}
+          <button type="submit" className="btn-primary" disabled={loading}>
+            {loading ? 'Signing in…' : 'Sign in'}
+          </button>
+        </form>
+
+        <div className="login-footer">
+          Student? <Link to="/login" style={{textDecoration: 'none', color: 'var(--ongoing-text)', fontWeight: 500}}>Sign in here</Link>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -89,50 +171,64 @@ export function RegisterPage() {
   }
 
   return (
-    <AuthLayout title="Create account" subtitle="Join STMS to manage your academic tasks">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <FormField label="Full name">
-          <Input value={name} onChange={e => setName(e.target.value)} placeholder="Juan dela Cruz" required />
-        </FormField>
-        <FormField label="Email">
-          <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@gmail.com" required />
-        </FormField>
-        <FormField label="Password">
-          <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Min. 6 characters" required />
-        </FormField>
-        <FormField label="Confirm password">
-          <Input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Repeat password" required />
-        </FormField>
-        {error && <p className="text-xs text-red-600">{error}</p>}
-        <Button type="submit" variant="primary" className="w-full justify-center" disabled={loading}>
-          {loading ? 'Creating account…' : 'Create account'}
-        </Button>
-        <p className="text-center text-xs text-gray-400">
-          Already have an account?{' '}
-          <Link to="/login" className="text-blue-600 hover:underline">Sign in</Link>
-        </p>
-      </form>
-    </AuthLayout>
-  )
-}
+    <div className="auth-page">
+      <div className="login-card">
+        <div className="login-logo">TaskMate · Create Account</div>
+        <div className="login-title">Get started</div>
+        <div className="login-sub">Create your student account</div>
 
-// ─── Shared layout ────────────────────────────────────────────────────────────
-function AuthLayout({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
-  return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm ring-1 ring-black/5 p-8">
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600">
-              <GraduationCap size={18} className="text-white" />
-            </div>
-            <span className="text-sm font-semibold text-gray-800">STMS</span>
+        <form onSubmit={handleSubmit}>
+          <div className="field">
+            <label>Full name</label>
+            <input 
+              type="text" 
+              value={name} 
+              onChange={e => setName(e.target.value)} 
+              placeholder="Juan dela Cruz" 
+              required 
+            />
           </div>
-          <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
-          <p className="text-sm text-gray-500 mt-1">{subtitle}</p>
+          <div className="field">
+            <label>Email address</label>
+            <input 
+              type="email" 
+              value={email} 
+              onChange={e => setEmail(e.target.value)} 
+              placeholder="you@gmail.com" 
+              required 
+            />
+          </div>
+          <div className="field">
+            <label>Password</label>
+            <input 
+              type="password" 
+              value={password} 
+              onChange={e => setPassword(e.target.value)} 
+              placeholder="Min. 8 characters" 
+              required 
+            />
+          </div>
+          <div className="field">
+            <label>Confirm password</label>
+            <input 
+              type="password" 
+              value={confirm} 
+              onChange={e => setConfirm(e.target.value)} 
+              placeholder="Repeat password" 
+              required 
+            />
+          </div>
+          {error && <p style={{fontSize: '12px', color: '#B91C1C', marginBottom: '12px'}}>{error}</p>}
+          <button type="submit" className="btn-primary" disabled={loading}>
+            {loading ? 'Creating account…' : 'Create account'}
+          </button>
+        </form>
+
+        <div className="login-footer">
+          Already have one? <Link to="/login" style={{textDecoration: 'none', color: 'inherit'}}>Sign in</Link>
         </div>
-        {children}
       </div>
     </div>
   )
 }
+
