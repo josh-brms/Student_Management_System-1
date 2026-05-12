@@ -6,7 +6,7 @@ import type { Profile, User } from '../types'
 interface AuthContextValue {
   supabaseUser: SupabaseUser | null
   session:      Session | null
-  profile:      Profile | null       // row from public.users plus auth id
+  profile:      Profile | null
   loading:      boolean
   signIn:       (email: string, password: string) => Promise<{ error: string | null }>
   signUp:       (email: string, password: string, name: string) => Promise<{ error: string | null }>
@@ -22,21 +22,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile,      setProfile]      = useState<Profile | null>(null)
   const [loading,      setLoading]      = useState(true)
 
-  async function fetchProfile(email: string, authId: string | null = null) {
+  async function fetchProfile(email: string, authId: string): Promise<Profile | null> {
     try {
       const { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('email', email)
         .single()
-      if (!error && data) setProfile({ ...(data as User), id: authId ?? '' })
+
+      if (!error && data) {
+        const p: Profile = { ...(data as User), id: authId }
+        setProfile(p)
+        return p
+      }
+
+      // Row doesn't exist yet — create it on the fly (handles OAuth / manual Auth signups)
+      const name = email.split('@')[0]
+      const { data: inserted, error: insertErr } = await supabase
+        .from('users')
+        .insert({ name, email, password_hash: 'managed_by_supabase_auth', role: 'student' })
+        .select()
+        .single()
+
+      if (!insertErr && inserted) {
+        const p: Profile = { ...(inserted as User), id: authId }
+        setProfile(p)
+        return p
+      }
     } catch {
-      // profile not ready yet
+      // swallow
     }
+    return null
   }
 
   async function refreshProfile() {
-    if (supabaseUser?.email) await fetchProfile(supabaseUser.email)
+    if (supabaseUser?.email) await fetchProfile(supabaseUser.email, supabaseUser.id)
   }
 
   useEffect(() => {
@@ -67,14 +87,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await supabase.from('users').update({ last_login_at: new Date().toISOString() }).eq('email', email)
         return { error: null }
       }
-
       const message = error.message ?? 'Unable to sign in.'
       if (message.toLowerCase().includes('invalid login credentials')) {
-        return { error: 'Incorrect password' }
+        return { error: 'Incorrect email or password.' }
       }
       return { error: message }
-    } catch (error: any) {
-      return { error: error?.message ?? 'Something went wrong.' }
+    } catch (e: any) {
+      return { error: e?.message ?? 'Something went wrong.' }
     }
   }
 
@@ -86,15 +105,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) return { error: error.message }
 
     if (data.user) {
-      const { error: insertErr } = await supabase.from('users').insert({
-        name,
-        email,
-        password_hash: 'managed_by_supabase_auth',
-        role: 'student',
-      })
-      if (insertErr) return { error: insertErr.message }
+      // Upsert so duplicate signups don't crash
+      const { error: upsertErr } = await supabase
+        .from('users')
+        .upsert({ name, email, password_hash: 'managed_by_supabase_auth', role: 'student' },
+                 { onConflict: 'email' })
+      if (upsertErr) return { error: upsertErr.message }
     }
-
     return { error: null }
   }
 
