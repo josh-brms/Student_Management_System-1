@@ -1,6 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Trash2 } from 'lucide-react'
-import type { Task, TaskFormValues } from '../types'
+import { Modal, FormField, Input, Select, Textarea, Button } from './ui'
+import { fetchSubjects } from '../lib/subjectApi'
+import { useAuth } from '../lib/AuthContext'
+import type { Task, TaskFormValues, Subject } from '../types'
 
 interface Props {
   task?: Task | null
@@ -11,22 +14,31 @@ interface Props {
 
 const defaultForm: TaskFormValues = {
   title: '', description: '', type: 'assignment',
-  priority: 'medium', status: 'pending', due_date: '',
+  priority: 'medium', status: 'pending', due_date: '', subject_id: null,
 }
 
 export function TaskModal({ task, onSave, onDelete, onClose }: Props) {
+  const { profile } = useAuth()
   const [form, setForm] = useState<TaskFormValues>(
     task ? {
-      title: task.title,
+      title:       task.title,
       description: task.description ?? '',
-      type: task.type,
-      priority: task.priority,
-      status: task.status,
-      due_date: task.due_date ?? '',
+      type:        task.type,
+      priority:    task.priority,
+      status:      task.status,
+      due_date:    task.due_date ?? '',
+      subject_id:  task.subject_id ?? null,
     } : defaultForm
   )
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [subjects,  setSubjects]  = useState<Subject[]>([])
+  const [loading,   setLoading]   = useState(false)
+  const [error,     setError]     = useState('')
+
+  useEffect(() => {
+    if (profile?.user_id) {
+      fetchSubjects(profile.user_id).then(setSubjects).catch(() => {})
+    }
+  }, [profile])
 
   function set<K extends keyof TaskFormValues>(k: K, v: TaskFormValues[K]) {
     setForm(f => ({ ...f, [k]: v }))
@@ -35,6 +47,7 @@ export function TaskModal({ task, onSave, onDelete, onClose }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!form.title.trim()) { setError('Title is required.'); return }
+    if (!form.due_date)     { setError('Due date is required.'); return }
     setLoading(true)
     try {
       await onSave(form)
@@ -47,87 +60,85 @@ export function TaskModal({ task, onSave, onDelete, onClose }: Props) {
   }
 
   return (
-    <div className="modal-overlay open">
-      <div className="modal">
-        <div className="modal-title">{task ? 'Edit task' : 'Create new task'}</div>
-        <div className="modal-sub">{task ? 'Update the details of this task' : 'Add a new academic task to your list'}</div>
-        
-        <form onSubmit={handleSubmit}>
+    <Modal title={task ? 'Edit task' : 'New task'} onClose={onClose}>
+      <div className="space-y-4">
+
+        <FormField label="Title">
+          <Input value={form.title} onChange={e => set('title', e.target.value)} placeholder="Task title" />
+        </FormField>
+
+        <FormField label="Subject (optional)">
+          <Select value={form.subject_id ?? ''} onChange={e => set('subject_id', e.target.value ? Number(e.target.value) : null)}>
+            <option value="">— No subject —</option>
+            {subjects.map(s => (
+              <option key={s.subject_id} value={s.subject_id}>
+                {s.code ? `${s.code} · ` : ''}{s.name}
+              </option>
+            ))}
+          </Select>
+        </FormField>
+
+        <div className="grid grid-cols-2 gap-3">
+          <FormField label="Type">
+            <Select value={form.type} onChange={e => set('type', e.target.value as any)}>
+              <option value="assignment">Assignment</option>
+              <option value="quiz">Quiz</option>
+              <option value="project">Project</option>
+            </Select>
+          </FormField>
+          <FormField label="Priority">
+            <Select value={form.priority} onChange={e => set('priority', e.target.value as any)}>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </Select>
+          </FormField>
+        </div>
+
+        <div className="form-row">
           <div className="form-field">
-            <label>Task title *</label>
-            <input 
-              type="text"
+            <label>Due date *</label>
+            <input
+              type="date"
               required
-              value={form.title} 
-              onChange={e => set('title', e.target.value)} 
-              placeholder="e.g. Calculus Problem Set 3"
+              value={form.due_date}
+              onChange={e => set('due_date', e.target.value)}
             />
           </div>
-
-          <div className="form-row">
-            <div className="form-field">
-              <label>Type *</label>
-              <select value={form.type} onChange={e => set('type', e.target.value as any)}>
-                <option value="assignment">Assignment</option>
-                <option value="quiz">Quiz</option>
-                <option value="project">Project</option>
-              </select>
-            </div>
-            <div className="form-field">
-              <label>Priority *</label>
-              <select value={form.priority} onChange={e => set('priority', e.target.value as any)}>
-                <option value="high">High</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-field">
-              <label>Due date *</label>
-              <input 
-                type="date" 
-                required
-                value={form.due_date} 
-                onChange={e => set('due_date', e.target.value)} 
-              />
-            </div>
-            <div className="form-field">
-              <label>Status</label>
-              <select value={form.status} onChange={e => set('status', e.target.value as any)}>
-                <option value="pending">Pending</option>
-                <option value="ongoing">Ongoing</option>
-                <option value="done">Done</option>
-              </select>
-            </div>
-          </div>
-
           <div className="form-field">
-            <label>Description</label>
-            <textarea 
-              value={form.description} 
-              onChange={e => set('description', e.target.value)} 
-              placeholder="Optional details about this task..."
-            />
+            <label>Status</label>
+            <select value={form.status} onChange={e => set('status', e.target.value as any)}>
+              <option value="pending">Pending</option>
+              <option value="ongoing">Ongoing</option>
+              <option value="done">Done</option>
+            </select>
           </div>
+        </div>
 
-          {error && <p style={{fontSize: '12px', color: '#B91C1C', marginBottom: '12px'}}>{error}</p>}
+        <div className="form-field">
+          <label>Description</label>
+          <textarea
+            value={form.description}
+            onChange={e => set('description', e.target.value)}
+            placeholder="Optional details about this task..."
+          />
+        </div>
 
-          <div className="modal-footer">
-            <button type="button" className="btn-cancel" onClick={onClose}>Cancel</button>
-            {task && onDelete && (
-              <button type="button" className="row-btn danger" onClick={() => onDelete(task)}>
-                <Trash2 size={14} style={{marginRight: 4}} /> Delete
-              </button>
-            )}
-            <button type="submit" className="btn-save" disabled={loading}>
-              {loading ? 'Saving…' : task ? 'Save changes' : 'Save task'}
+        {error && <p className="text-xs text-red-400">{error}</p>}
+
+        <div className="modal-footer">
+          <button type="button" className="btn-cancel" onClick={onClose}>Cancel</button>
+          {task && onDelete && (
+            <button type="button" className="row-btn danger" onClick={() => onDelete(task)}>
+              <Trash2 size={14} style={{marginRight: 4}} /> Delete
             </button>
-          </div>
-        </form>
+          )}
+          <button type="submit" className="btn-save" onClick={handleSubmit} disabled={loading}>
+            {loading ? 'Saving…' : task ? 'Save changes' : 'Save task'}
+          </button>
+        </div>
       </div>
-    </div>
+    </Modal>
   )
 }
 

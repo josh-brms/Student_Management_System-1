@@ -5,7 +5,7 @@ import { Topbar } from '../components/Topbar'
 import type { Task } from '../types'
 
 export function CalendarPage() {
-  const { user } = useAuth()
+  const { profile } = useAuth()
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   
@@ -17,17 +17,17 @@ export function CalendarPage() {
   const currentMonth = todayStart.getMonth()
 
   async function load() {
-    if (!user) return
+    if (!profile?.user_id) return
     setLoading(true)
     try {
-      const data = await fetchTasks(user.id, false, { status: 'all', type: 'all', search: '' })
+      const data = await fetchTasks(profile.user_id, false, { status: 'all', type: 'all', subject_id: 'all', search: '' })
       setTasks(data)
     } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => { load() }, [user])
+  useEffect(() => { load() }, [profile])
 
   // Get task due dates for this month
   const taskDates = new Set(
@@ -148,7 +148,7 @@ export function CalendarPage() {
                     const dueDate = task.due_date ? new Date(task.due_date) : new Date()
                     const dueFmt = dueDate.toLocaleDateString('en-PH', {month: 'short', day: 'numeric'})
                     return (
-                      <div key={task.id} style={{display: 'flex', gap: 12, padding: '10px 0', borderBottom: '0.5px solid var(--border)'}}>
+                      <div key={task.task_id} style={{display: 'flex', gap: 12, padding: '10px 0', borderBottom: '0.5px solid var(--border)'}}>
                         <div style={{
                           width: 28,
                           height: 28,
