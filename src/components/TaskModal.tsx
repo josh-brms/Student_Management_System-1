@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { Trash2 } from 'lucide-react'
 import { Modal, FormField, Input, Select, Textarea, Button } from './ui'
 import { fetchSubjects } from '../lib/subjectApi'
 import { useAuth } from '../lib/AuthContext'
@@ -7,6 +8,7 @@ import type { Task, TaskFormValues, Subject } from '../types'
 interface Props {
   task?: Task | null
   onSave: (values: TaskFormValues) => Promise<void>
+  onDelete?: (task: Task) => void
   onClose: () => void
 }
 
@@ -15,7 +17,7 @@ const defaultForm: TaskFormValues = {
   priority: 'medium', status: 'pending', due_date: '', subject_id: null,
 }
 
-export function TaskModal({ task, onSave, onClose }: Props) {
+export function TaskModal({ task, onSave, onDelete, onClose }: Props) {
   const { profile } = useAuth()
   const [form, setForm] = useState<TaskFormValues>(
     task ? {
@@ -42,7 +44,8 @@ export function TaskModal({ task, onSave, onClose }: Props) {
     setForm(f => ({ ...f, [k]: v }))
   }
 
-  async function handleSubmit() {
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
     if (!form.title.trim()) { setError('Title is required.'); return }
     if (!form.due_date)     { setError('Due date is required.'); return }
     setLoading(true)
@@ -92,30 +95,47 @@ export function TaskModal({ task, onSave, onClose }: Props) {
           </FormField>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <FormField label="Status">
-            <Select value={form.status} onChange={e => set('status', e.target.value as any)}>
+        <div className="form-row">
+          <div className="form-field">
+            <label>Due date *</label>
+            <input
+              type="date"
+              required
+              value={form.due_date}
+              onChange={e => set('due_date', e.target.value)}
+            />
+          </div>
+          <div className="form-field">
+            <label>Status</label>
+            <select value={form.status} onChange={e => set('status', e.target.value as any)}>
               <option value="pending">Pending</option>
               <option value="ongoing">Ongoing</option>
               <option value="done">Done</option>
-            </Select>
-          </FormField>
-          <FormField label="Due date">
-            <Input type="date" value={form.due_date} onChange={e => set('due_date', e.target.value)} />
-          </FormField>
+            </select>
+          </div>
         </div>
 
-        <FormField label="Description">
-          <Textarea value={form.description} onChange={e => set('description', e.target.value)} placeholder="Optional description..." />
-        </FormField>
+        <div className="form-field">
+          <label>Description</label>
+          <textarea
+            value={form.description}
+            onChange={e => set('description', e.target.value)}
+            placeholder="Optional details about this task..."
+          />
+        </div>
 
         {error && <p className="text-xs text-red-400">{error}</p>}
 
-        <div className="flex justify-end gap-2 pt-1">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button variant="primary" onClick={handleSubmit} disabled={loading}>
-            {loading ? 'Saving…' : task ? 'Save changes' : 'Create task'}
-          </Button>
+        <div className="modal-footer">
+          <button type="button" className="btn-cancel" onClick={onClose}>Cancel</button>
+          {task && onDelete && (
+            <button type="button" className="row-btn danger" onClick={() => onDelete(task)}>
+              <Trash2 size={14} style={{marginRight: 4}} /> Delete
+            </button>
+          )}
+          <button type="submit" className="btn-save" onClick={handleSubmit} disabled={loading}>
+            {loading ? 'Saving…' : task ? 'Save changes' : 'Save task'}
+          </button>
         </div>
       </div>
     </Modal>

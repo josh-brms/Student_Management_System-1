@@ -1,9 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Search } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useAuth } from '../lib/AuthContext'
-import { fetchTasks, createTask, updateTask, deleteTask, cycleTaskStatus } from '../lib/taskApi'
-import { Card, Button, Input, EmptyState, Spinner } from '../components/ui'
-import { TaskCard } from '../components/TaskCard'
+import { fetchTasks, createTask, updateTask, deleteTask } from '../lib/taskApi'
+import { Topbar } from '../components/Topbar'
 import { TaskModal } from '../components/TaskModal'
 import type { Task, TaskFilter, TaskFormValues } from '../types'
 
@@ -49,16 +48,10 @@ export function TasksPage() {
     load()
   }
 
-  async function confirmDelete() {
+  async function handleDelete() {
     if (!deleteTarget || !userId) return
     await deleteTask(deleteTarget.task_id, userId)
     setDeleteTarget(null)
-    load()
-  }
-
-  async function handleCycle(task: Task) {
-    if (!userId) return
-    await cycleTaskStatus(task, userId)
     load()
   }
 
@@ -66,95 +59,137 @@ export function TasksPage() {
     setFilter(f => ({ ...f, [k]: v }))
   }
 
-  const tabClass = (active: boolean) =>
-    `px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-      active ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
-    }`
+  function getStatusBadgeClass(status: string): string {
+    return `badge badge-${status}`
+  }
+
+  function getPriorityBadgeClass(priority: string): string {
+    return `badge badge-${priority === 'high' ? 'high' : priority === 'medium' ? 'medium' : 'low'}`
+  }
+
+  function getTypeBadgeClass(type: string): string {
+    return `badge badge-${type}`
+  }
 
   return (
-    <div className="p-6 max-w-4xl">
-      <div className="mb-5 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-gray-900">{isAdmin ? 'All tasks' : 'My tasks'}</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{tasks.length} task{tasks.length !== 1 ? 's' : ''} found</p>
-        </div>
-        <Button variant="primary" onClick={() => setShowModal(true)}>
-          <Plus size={14} /> New task
-        </Button>
-      </div>
-
-      <Card className="p-3 mb-4">
-        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap gap-3">
-            <div className="flex gap-1">
+    <div className="main">
+      <Topbar title={isAdmin ? 'All tasks' : 'My tasks'} onNewClick={() => setShowModal(true)} showNewButton />
+      <div className="content">
+        <div className="card" style={{marginBottom: 20, padding: '16px 20px'}}>
+          <div className="filter-row">
+            <div>
               {STATUS_TABS.map(s => (
-                <button key={s} className={tabClass(filter.status === s)} onClick={() => setFilterField('status', s)}>
+                <button
+                  key={s}
+                  className={`filter-chip ${filter.status === s ? 'active' : ''}`}
+                  onClick={() => setFilterField('status', s)}
+                >
                   {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
                 </button>
               ))}
             </div>
-            <div className="flex gap-1">
+            <div className="filter-sep" style={{margin: '0 8px'}} />
+            <div>
               {TYPE_TABS.map(t => (
-                <button key={t} className={tabClass(filter.type === t)} onClick={() => setFilterField('type', t)}>
+                <button
+                  key={t}
+                  className={`filter-chip ${filter.type === t ? 'active' : ''}`}
+                  onClick={() => setFilterField('type', t)}
+                >
                   {t === 'all' ? 'All types' : t.charAt(0).toUpperCase() + t.slice(1)}
                 </button>
               ))}
             </div>
-          </div>
-          <div className="relative">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-            <Input
+            <input
+              type="text"
               value={filter.search}
               onChange={e => setFilterField('search', e.target.value)}
               placeholder="Search tasks…"
-              className="pl-7 w-44"
+              className="search-box"
+              style={{marginLeft: 'auto', maxWidth: 200}}
             />
           </div>
         </div>
-      </Card>
 
-      <Card>
-        <div className="p-3">
-          {loading ? (
-            <div className="flex justify-center py-16"><Spinner className="text-blue-500" /></div>
-          ) : tasks.length === 0 ? (
-            <EmptyState
-              icon={<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/></svg>}
-              message="No tasks match your filters."
-              action={<Button variant="primary" size="sm" onClick={() => setShowModal(true)}><Plus size={13} /> Create task</Button>}
-            />
-          ) : (
-            <div className="space-y-2">
-              {tasks.map(task => (
-                <TaskCard
-                  key={task.task_id}
-                  task={task}
-                  onEdit={setEditTask}
-                  onDelete={setDeleteTarget}
-                  onCycle={handleCycle}
-                  showOwner={isAdmin}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </Card>
+        {loading ? (
+          <div style={{textAlign: 'center', padding: '60px 20px', color: 'var(--muted)'}}>
+            <div className="spinner" style={{margin: '0 auto 16px'}}></div>
+            <p>Loading tasks...</p>
+          </div>
+        ) : tasks.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">○</div>
+            <div className="empty-text">No tasks found</div>
+            <button className="btn-new" onClick={() => setShowModal(true)} style={{margin: '0 auto'}}>
+              <Plus size={12} /> New task
+            </button>
+          </div>
+        ) : (
+          <table className="task-table">
+            <thead>
+              <tr>
+                <th>Task</th>
+                <th>Type</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Due date</th>
+                <th style={{width: 100}}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {tasks.map(t => {
+                const today = new Date()
+                const due = t.due_date ? new Date(t.due_date) : new Date()
+                const overdue = t.due_date && due < today && t.status !== 'done'
+                const dueFmt = due.toLocaleDateString('en-PH', {month: 'short', day: 'numeric', year: 'numeric'})
+                return (
+                  <tr key={t.task_id}>
+                    <td>
+                      <div className="task-name">{t.title}</div>
+                      {t.description && <div className="task-desc">{t.description}</div>}
+                    </td>
+                    <td><span className={getTypeBadgeClass(t.type)}>{t.type}</span></td>
+                    <td><span className={getPriorityBadgeClass(t.priority)}>{t.priority}</span></td>
+                    <td><span className={getStatusBadgeClass(t.status)}>{t.status}</span></td>
+                    <td><div className={`due-date ${overdue ? 'due-overdue' : ''}`}>{dueFmt}{overdue ? ' · overdue' : ''}</div></td>
+                    <td>
+                      <div className="row-actions">
+                        <button className="row-btn" onClick={() => setEditTask(t)}>Edit</button>
+                        <button className="row-btn danger" onClick={() => setDeleteTarget(t)}>Delete</button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {(showModal || editTask) && (
+        <TaskModal
+          task={editTask ?? undefined}
+          onSave={editTask ? handleEdit : handleCreate}
+          onDelete={editTask ? () => deleteTarget && handleDelete() : undefined}
+          onClose={() => { setShowModal(false); setEditTask(null); }}
+        />
+      )}
 
       {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl ring-1 ring-black/5 p-6">
-            <h2 className="text-base font-semibold text-gray-900 mb-1">Delete task?</h2>
-            <p className="text-sm text-gray-500 mb-5">"{deleteTarget.title}" will be permanently removed.</p>
-            <div className="flex justify-end gap-2">
-              <Button variant="secondary" onClick={() => setDeleteTarget(null)}>Cancel</Button>
-              <Button variant="danger" onClick={confirmDelete}>Delete</Button>
+        <div className="modal-overlay open">
+          <div className="modal" style={{width: 320}}>
+            <div className="modal-title">Delete task?</div>
+            <div className="modal-sub">{deleteTarget.title}</div>
+            <p style={{fontSize: 13, color: 'var(--muted)', marginBottom: 20}}>
+              This action cannot be undone.
+            </p>
+            <div className="modal-footer">
+              <button className="btn-cancel" onClick={() => setDeleteTarget(null)}>Cancel</button>
+              <button className="btn-save" onClick={handleDelete} style={{background: '#B91C1C'}}>Delete</button>
             </div>
           </div>
         </div>
       )}
-
-      {showModal && <TaskModal onSave={handleCreate} onClose={() => setShowModal(false)} />}
-      {editTask  && <TaskModal task={editTask} onSave={handleEdit} onClose={() => setEditTask(null)} />}
     </div>
   )
 }

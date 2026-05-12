@@ -22,7 +22,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile,      setProfile]      = useState<User | null>(null)
   const [loading,      setLoading]      = useState(true)
 
-  // Fetch the matching row from public.users by email
   async function fetchProfile(email: string) {
     try {
       const { data, error } = await supabase
@@ -62,12 +61,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   async function signIn(email: string, password: string) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (!error) {
-      // Update last_login_at in users table
-      await supabase.from('users').update({ last_login_at: new Date().toISOString() }).eq('email', email)
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (!error) {
+        await supabase.from('users').update({ last_login_at: new Date().toISOString() }).eq('email', email)
+        return { error: null }
+      }
+
+      const message = error.message ?? 'Unable to sign in.'
+      if (message.toLowerCase().includes('invalid login credentials')) {
+        return { error: 'Incorrect password' }
+      }
+      return { error: message }
+    } catch (error: any) {
+      return { error: error?.message ?? 'Something went wrong.' }
     }
-    return { error: error?.message ?? null }
   }
 
   async function signUp(email: string, password: string, name: string) {
@@ -77,7 +85,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
     if (error) return { error: error.message }
 
-    // Insert into public.users (mirrors the schema)
     if (data.user) {
       const { error: insertErr } = await supabase.from('users').insert({
         name,

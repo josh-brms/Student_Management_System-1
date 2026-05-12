@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { UserPlus } from 'lucide-react'
 import { useAuth } from '../lib/AuthContext'
 import { fetchAllUsers, updateUser, adminCreateUser } from '../lib/userApi'
+import { Topbar } from '../components/Topbar'
 import { Card, Button, Badge, Modal, FormField, Input, Select, Spinner } from '../components/ui'
 import type { User, UserFormValues } from '../types'
 
@@ -39,30 +39,48 @@ export function UsersPage() {
   }
 
   function formatDate(d: string) {
-    return new Date(d).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' })
+    return new Date(d).toLocaleDateString('en-PH', { month: 'short', year: 'numeric' })
   }
 
   function initials(name: string) {
     return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
   }
 
-  return (
-    <div className="p-6 max-w-4xl">
-      <div className="mb-5 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-gray-900">Users</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{users.length} registered users</p>
-        </div>
-        <Button variant="primary" onClick={() => setShowModal(true)}>
-          <UserPlus size={14} /> New user
-        </Button>
-      </div>
+  const stats = {
+    total: users.length,
+    students: users.filter(u => u.role === 'student').length,
+    admins: users.filter(u => u.role === 'admin').length
+  }
 
-      <Card>
+  return (
+    <div className="main">
+      <Topbar title="User Management" onNewClick={() => setShowModal(true)} showNewButton />
+      <div className="content">
+        <div className="stats-row" style={{gridTemplateColumns: 'repeat(3, 1fr)'}}>
+          <div className="stat-card">
+            <div className="stat-label">Total users</div>
+            <div className="stat-val">{stats.total}</div>
+            <div className="stat-sub">registered</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Students</div>
+            <div className="stat-val">{stats.students}</div>
+            <div className="stat-sub">active</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Admins</div>
+            <div className="stat-val">{stats.admins}</div>
+            <div className="stat-sub">active</div>
+          </div>
+        </div>
+
         {loading ? (
-          <div className="flex justify-center py-16"><Spinner className="text-blue-500" /></div>
+          <div style={{textAlign: 'center', padding: '60px 20px', color: 'var(--muted)'}}>
+            <div className="spinner" style={{margin: '0 auto 16px'}}></div>
+            <p>Loading users...</p>
+          </div>
         ) : (
-          <table className="w-full text-sm">
+          <table className="task-table">
             <thead>
               <tr className="border-b border-gray-100">
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wide">User</th>
@@ -104,7 +122,7 @@ export function UsersPage() {
             </tbody>
           </table>
         )}
-      </Card>
+      </div>
 
       {showModal && <CreateUserModal onSave={handleCreate} onClose={() => setShowModal(false)} />}
       {editUser  && <EditUserModal user={editUser} onSave={handleEditSave} onClose={() => setEditUser(null)} />}

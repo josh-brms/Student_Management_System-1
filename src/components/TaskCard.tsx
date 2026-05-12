@@ -23,7 +23,6 @@ function isOverdue(task: Task) {
 
 export function TaskCard({ task, onEdit, onDelete, onCycle, showOwner }: Props) {
   const overdue = isOverdue(task)
-
   return (
     <div className={`group flex gap-3 rounded-xl p-3.5 ring-1 transition-all hover:ring-gray-300 ${task.status === 'done' ? 'ring-gray-100 bg-gray-50/60' : 'ring-gray-200 bg-white'}`}>
       <button
@@ -35,7 +34,8 @@ export function TaskCard({ task, onEdit, onDelete, onCycle, showOwner }: Props) 
           ? <CheckCircle2 size={18} className="text-emerald-500" />
           : task.status === 'ongoing'
           ? <Clock size={18} className="text-blue-500" />
-          : <Circle size={18} />}
+          : <Circle size={18} />
+        }
       </button>
 
       <div className="min-w-0 flex-1">
@@ -45,7 +45,6 @@ export function TaskCard({ task, onEdit, onDelete, onCycle, showOwner }: Props) 
         {task.description && (
           <p className="mt-0.5 text-xs text-gray-400 truncate">{task.description}</p>
         )}
-        {/* Subject pill */}
         {task.subject && (
           <span
             className="mt-1 inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded"
