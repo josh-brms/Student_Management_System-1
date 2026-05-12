@@ -10,12 +10,12 @@ const STATUS_TABS = ['all', 'pending', 'ongoing', 'done'] as const
 const TYPE_TABS   = ['all', 'assignment', 'quiz', 'project'] as const
 
 export function TasksPage() {
-  const { profile } = useAuth()
+  const { profile, loading: authLoading } = useAuth()
   const isAdmin = profile?.role === 'admin'
   const userId  = profile?.user_id
 
   const [tasks,        setTasks]        = useState<Task[]>([])
-  const [loading,      setLoading]      = useState(true)
+  const [loading,      setLoading]      = useState(false)
   const [filter,       setFilter]       = useState<TaskFilter>({ status: 'all', type: 'all', subject_id: 'all', search: '' })
   const [showModal,    setShowModal]    = useState(false)
   const [editTask,     setEditTask]     = useState<Task | null>(null)
@@ -32,7 +32,9 @@ export function TasksPage() {
     }
   }, [userId, isAdmin, filter])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    if (!authLoading && userId) load()
+  }, [authLoading, userId, isAdmin, filter])
 
   async function handleCreate(values: TaskFormValues) {
     if (!userId) return
