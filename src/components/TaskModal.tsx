@@ -19,6 +19,7 @@ const defaultForm: TaskFormValues = {
 
 export function TaskModal({ task, onSave, onDelete, onClose }: Props) {
   const { profile } = useAuth()
+  const subjectInputId = 'task-subject-input'
   const [form, setForm] = useState<TaskFormValues>(
     task ? {
       title:       task.title,
@@ -30,6 +31,9 @@ export function TaskModal({ task, onSave, onDelete, onClose }: Props) {
       subject_id:  task.subject_id ?? null,
     } : defaultForm
   )
+  const [subjectInput, setSubjectInput] = useState(
+    task?.subject ? (task.subject.code ? `${task.subject.code} · ${task.subject.name}` : task.subject.name) : ''
+  )
   const [subjects,  setSubjects]  = useState<Subject[]>([])
   const [loading,   setLoading]   = useState(false)
   const [error,     setError]     = useState('')
@@ -39,6 +43,17 @@ export function TaskModal({ task, onSave, onDelete, onClose }: Props) {
       fetchSubjects(profile.user_id).then(setSubjects).catch(() => {})
     }
   }, [profile])
+
+  useEffect(() => {
+    if (!form.subject_id) {
+      if (subjectInput) setSubjectInput('')
+      return
+    }
+    const selectedSubject = subjects.find(s => s.subject_id === form.subject_id)
+    if (selectedSubject) {
+      setSubjectInput(selectedSubject.code ? `${selectedSubject.code} · ${selectedSubject.name}` : selectedSubject.name)
+    }
+  }, [form.subject_id, subjects])
 
   function set<K extends keyof TaskFormValues>(k: K, v: TaskFormValues[K]) {
     setForm(f => ({ ...f, [k]: v }))
@@ -68,14 +83,28 @@ export function TaskModal({ task, onSave, onDelete, onClose }: Props) {
         </FormField>
 
         <FormField label="Subject (optional)">
-          <Select value={form.subject_id ?? ''} onChange={e => set('subject_id', e.target.value ? Number(e.target.value) : null)}>
-            <option value="">— No subject —</option>
-            {subjects.map(s => (
-              <option key={s.subject_id} value={s.subject_id}>
-                {s.code ? `${s.code} · ` : ''}{s.name}
-              </option>
-            ))}
-          </Select>
+          <>
+            <Input
+              list={subjectInputId}
+              value={subjectInput}
+              onChange={e => {
+                const value = e.target.value
+                setSubjectInput(value)
+                const normalized = value.trim().toLowerCase()
+                const matched = subjects.find(s => {
+                  const label = s.code ? `${s.code} · ${s.name}` : s.name
+                  return label.toLowerCase() === normalized || s.name.toLowerCase() === normalized || (s.code?.toLowerCase() === normalized)
+                })
+                set('subject_id', matched ? matched.subject_id : null)
+              }}
+              placeholder="Type a subject"
+            />
+            <datalist id={subjectInputId}>
+              {subjects.map(s => (
+                <option key={s.subject_id} value={s.code ? `${s.code} · ${s.name}` : s.name} />
+              ))}
+            </datalist>
+          </>
         </FormField>
 
         <div className="grid grid-cols-2 gap-3">
