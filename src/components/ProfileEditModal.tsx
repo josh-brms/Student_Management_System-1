@@ -11,7 +11,7 @@ interface ProfileEditModalProps {
 }
 
 export function ProfileEditModal({ isOpen, profile, onClose }: ProfileEditModalProps) {
-  const { user, refreshProfile } = useAuth()
+  const { refreshProfile } = useAuth()
   const [name, setName] = useState(profile.name)
   const [error, setError] = useState<string>('')
   const [loading, setLoading] = useState(false)
@@ -24,13 +24,12 @@ export function ProfileEditModal({ isOpen, profile, onClose }: ProfileEditModalP
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!user) return
 
     setError('')
     setLoading(true)
 
     try {
-      await updateProfile(user.id, { name: name.trim() })
+      await updateProfile(profile.user_id, { name: name.trim() })
       await refreshProfile()
       onClose()
     } catch (err) {

@@ -1,12 +1,12 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import type { User as SupabaseUser, Session } from '@supabase/supabase-js'
 import { supabase } from './supabase'
-import type { User } from '../types'
+import type { Profile, User } from '../types'
 
 interface AuthContextValue {
   supabaseUser: SupabaseUser | null
   session:      Session | null
-  profile:      User | null       // row from public.users
+  profile:      Profile | null       // row from public.users plus auth id
   loading:      boolean
   signIn:       (email: string, password: string) => Promise<{ error: string | null }>
   signUp:       (email: string, password: string, name: string) => Promise<{ error: string | null }>
@@ -19,17 +19,17 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null)
   const [session,      setSession]      = useState<Session | null>(null)
-  const [profile,      setProfile]      = useState<User | null>(null)
+  const [profile,      setProfile]      = useState<Profile | null>(null)
   const [loading,      setLoading]      = useState(true)
 
-  async function fetchProfile(email: string) {
+  async function fetchProfile(email: string, authId: string | null = null) {
     try {
       const { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('email', email)
         .single()
-      if (!error && data) setProfile(data as User)
+      if (!error && data) setProfile({ ...(data as User), id: authId ?? '' })
     } catch {
       // profile not ready yet
     }
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session)
       setSupabaseUser(session?.user ?? null)
       if (session?.user?.email) {
-        fetchProfile(session.user.email).finally(() => setLoading(false))
+        fetchProfile(session.user.email, session.user.id).finally(() => setLoading(false))
       } else {
         setLoading(false)
       }
@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
       setSupabaseUser(session?.user ?? null)
-      if (session?.user?.email) fetchProfile(session.user.email)
+      if (session?.user?.email) fetchProfile(session.user.email, session.user.id)
       else setProfile(null)
     })
 
