@@ -11,56 +11,54 @@ const STATUS_TABS = ['all', 'pending', 'ongoing', 'done'] as const
 const TYPE_TABS   = ['all', 'assignment', 'quiz', 'project'] as const
 
 export function TasksPage() {
-  const { user, profile } = useAuth()
+  const { profile } = useAuth()
   const isAdmin = profile?.role === 'admin'
+  const userId  = profile?.user_id
 
-  const [tasks, setTasks] = useState<Task[]>([])
-  const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState<TaskFilter>({ status: 'all', type: 'all', search: '' })
-  const [showModal, setShowModal] = useState(false)
-  const [editTask, setEditTask] = useState<Task | null>(null)
+  const [tasks,        setTasks]        = useState<Task[]>([])
+  const [loading,      setLoading]      = useState(true)
+  const [filter,       setFilter]       = useState<TaskFilter>({ status: 'all', type: 'all', subject_id: 'all', search: '' })
+  const [showModal,    setShowModal]    = useState(false)
+  const [editTask,     setEditTask]     = useState<Task | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Task | null>(null)
 
   const load = useCallback(async () => {
-    if (!user) return
+    if (!userId) return
     setLoading(true)
     try {
-      const data = await fetchTasks(user.id, isAdmin, filter)
+      const data = await fetchTasks(userId, isAdmin, filter)
       setTasks(data)
     } finally {
       setLoading(false)
     }
-  }, [user, isAdmin, filter])
+  }, [userId, isAdmin, filter])
 
   useEffect(() => { load() }, [load])
 
   async function handleCreate(values: TaskFormValues) {
-    if (!user) return
-    await createTask(user.id, values)
+    if (!userId) return
+    await createTask(userId, values)
     setShowModal(false)
     load()
   }
 
   async function handleEdit(values: TaskFormValues) {
-    if (!editTask) return
-    await updateTask(editTask.id, values)
+    if (!editTask || !userId) return
+    await updateTask(editTask.task_id, userId, values)
     setEditTask(null)
     load()
   }
 
-  async function handleDelete(task: Task) {
-    setDeleteTarget(task)
-  }
-
   async function confirmDelete() {
-    if (!deleteTarget) return
-    await deleteTask(deleteTarget.id)
+    if (!deleteTarget || !userId) return
+    await deleteTask(deleteTarget.task_id, userId)
     setDeleteTarget(null)
     load()
   }
 
   async function handleCycle(task: Task) {
-    await cycleTaskStatus(task)
+    if (!userId) return
+    await cycleTaskStatus(task, userId)
     load()
   }
 
@@ -75,7 +73,6 @@ export function TasksPage() {
 
   return (
     <div className="p-6 max-w-4xl">
-      {/* Header */}
       <div className="mb-5 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">{isAdmin ? 'All tasks' : 'My tasks'}</h1>
@@ -86,7 +83,6 @@ export function TasksPage() {
         </Button>
       </div>
 
-      {/* Filters */}
       <Card className="p-3 mb-4">
         <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap gap-3">
@@ -117,7 +113,6 @@ export function TasksPage() {
         </div>
       </Card>
 
-      {/* Task list */}
       <Card>
         <div className="p-3">
           {loading ? (
@@ -132,10 +127,10 @@ export function TasksPage() {
             <div className="space-y-2">
               {tasks.map(task => (
                 <TaskCard
-                  key={task.id}
+                  key={task.task_id}
                   task={task}
                   onEdit={setEditTask}
-                  onDelete={handleDelete}
+                  onDelete={setDeleteTarget}
                   onCycle={handleCycle}
                   showOwner={isAdmin}
                 />
@@ -145,7 +140,6 @@ export function TasksPage() {
         </div>
       </Card>
 
-      {/* Delete confirm */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
           <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl ring-1 ring-black/5 p-6">
@@ -160,7 +154,7 @@ export function TasksPage() {
       )}
 
       {showModal && <TaskModal onSave={handleCreate} onClose={() => setShowModal(false)} />}
-      {editTask && <TaskModal task={editTask} onSave={handleEdit} onClose={() => setEditTask(null)} />}
+      {editTask  && <TaskModal task={editTask} onSave={handleEdit} onClose={() => setEditTask(null)} />}
     </div>
   )
 }

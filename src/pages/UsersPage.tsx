@@ -1,21 +1,21 @@
 import { useEffect, useState } from 'react'
 import { UserPlus } from 'lucide-react'
 import { useAuth } from '../lib/AuthContext'
-import { fetchAllProfiles, updateProfile, adminCreateUser } from '../lib/userApi'
+import { fetchAllUsers, updateUser, adminCreateUser } from '../lib/userApi'
 import { Card, Button, Badge, Modal, FormField, Input, Select, Spinner } from '../components/ui'
-import type { Profile, UserFormValues } from '../types'
+import type { User, UserFormValues } from '../types'
 
 export function UsersPage() {
   const { profile: currentProfile } = useAuth()
-  const [users, setUsers] = useState<Profile[]>([])
-  const [loading, setLoading] = useState(true)
+  const [users,     setUsers]     = useState<User[]>([])
+  const [loading,   setLoading]   = useState(true)
   const [showModal, setShowModal] = useState(false)
-  const [editUser, setEditUser] = useState<Profile | null>(null)
+  const [editUser,  setEditUser]  = useState<User | null>(null)
 
   async function load() {
     setLoading(true)
     try {
-      const data = await fetchAllProfiles()
+      const data = await fetchAllUsers()
       setUsers(data)
     } finally {
       setLoading(false)
@@ -31,9 +31,9 @@ export function UsersPage() {
     load()
   }
 
-  async function handleEditSave(values: Partial<Pick<Profile, 'name' | 'role'>>) {
+  async function handleEditSave(values: Partial<Pick<User, 'name' | 'role'>>) {
     if (!editUser) return
-    await updateProfile(editUser.id, values)
+    await updateUser(editUser.user_id, values)
     setEditUser(null)
     load()
   }
@@ -67,13 +67,14 @@ export function UsersPage() {
               <tr className="border-b border-gray-100">
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wide">User</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wide">Role</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wide">Status</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wide">Joined</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
             <tbody>
               {users.map(u => (
-                <tr key={u.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
+                <tr key={u.user_id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2.5">
                       <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${u.role === 'admin' ? 'bg-violet-100 text-violet-700' : 'bg-blue-100 text-blue-700'}`}>
@@ -81,13 +82,19 @@ export function UsersPage() {
                       </div>
                       <div>
                         <p className="font-medium text-gray-800 leading-none">{u.name}</p>
-                        {u.id === currentProfile?.id && (
-                          <span className="text-[10px] text-gray-400 mt-0.5 inline-block">You</span>
+                        <p className="text-[10px] text-gray-400 mt-0.5">{u.email}</p>
+                        {u.user_id === currentProfile?.user_id && (
+                          <span className="text-[10px] text-blue-500">You</span>
                         )}
                       </div>
                     </div>
                   </td>
                   <td className="px-4 py-3"><Badge value={u.role} /></td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs font-medium ${u.is_active ? 'text-emerald-600' : 'text-red-500'}`}>
+                      {u.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
                   <td className="px-4 py-3 text-gray-400 text-xs">{formatDate(u.created_at)}</td>
                   <td className="px-4 py-3 text-right">
                     <Button variant="ghost" size="sm" onClick={() => setEditUser(u)}>Edit</Button>
@@ -100,12 +107,11 @@ export function UsersPage() {
       </Card>
 
       {showModal && <CreateUserModal onSave={handleCreate} onClose={() => setShowModal(false)} />}
-      {editUser && <EditUserModal user={editUser} onSave={handleEditSave} onClose={() => setEditUser(null)} />}
+      {editUser  && <EditUserModal user={editUser} onSave={handleEditSave} onClose={() => setEditUser(null)} />}
     </div>
   )
 }
 
-// ─── Create User Modal ────────────────────────────────────────────────────────
 function CreateUserModal({ onSave, onClose }: { onSave: (v: UserFormValues) => Promise<void>; onClose: () => void }) {
   const [form, setForm] = useState<UserFormValues>({ name: '', email: '', password: '', role: 'student' })
   const [loading, setLoading] = useState(false)
@@ -127,7 +133,7 @@ function CreateUserModal({ onSave, onClose }: { onSave: (v: UserFormValues) => P
     <Modal title="New user" onClose={onClose}>
       <div className="space-y-4">
         <FormField label="Full name"><Input value={form.name} onChange={e => set('name', e.target.value)} placeholder="Juan dela Cruz" /></FormField>
-        <FormField label="Email"><Input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="user@gmail.com" /></FormField>
+        <FormField label="Email"><Input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="user@cspc.edu.ph" /></FormField>
         <FormField label="Password"><Input type="password" value={form.password} onChange={e => set('password', e.target.value)} placeholder="Min. 6 characters" /></FormField>
         <FormField label="Role">
           <Select value={form.role} onChange={e => set('role', e.target.value as any)}>
@@ -145,8 +151,7 @@ function CreateUserModal({ onSave, onClose }: { onSave: (v: UserFormValues) => P
   )
 }
 
-// ─── Edit User Modal ──────────────────────────────────────────────────────────
-function EditUserModal({ user, onSave, onClose }: { user: Profile; onSave: (v: Partial<Pick<Profile, 'name' | 'role'>>) => Promise<void>; onClose: () => void }) {
+function EditUserModal({ user, onSave, onClose }: { user: User; onSave: (v: Partial<Pick<User, 'name' | 'role'>>) => Promise<void>; onClose: () => void }) {
   const [name, setName] = useState(user.name)
   const [role, setRole] = useState(user.role)
   const [loading, setLoading] = useState(false)

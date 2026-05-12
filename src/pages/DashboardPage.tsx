@@ -2,30 +2,31 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CheckCircle2, Clock, AlertCircle, LayoutList, ChevronRight } from 'lucide-react'
 import { useAuth } from '../lib/AuthContext'
-import { fetchTasks, fetchTaskStats } from '../lib/taskApi'
+import { fetchTasks, fetchTaskStats, updateTask, deleteTask, cycleTaskStatus } from '../lib/taskApi'
 import { Card, Spinner } from '../components/ui'
 import { TaskCard } from '../components/TaskCard'
-import { updateTask, deleteTask, cycleTaskStatus } from '../lib/taskApi'
 import { TaskModal } from '../components/TaskModal'
 import type { Task, TaskFormValues } from '../types'
 
 interface Stats { total: number; pending: number; ongoing: number; done: number; overdue: number }
 
 export function DashboardPage() {
-  const { user, profile } = useAuth()
+  const { profile } = useAuth()
   const isAdmin = profile?.role === 'admin'
-  const [stats, setStats] = useState<Stats | null>(null)
-  const [recent, setRecent] = useState<Task[]>([])
-  const [loading, setLoading] = useState(true)
+  const userId = profile?.user_id
+
+  const [stats,    setStats]    = useState<Stats | null>(null)
+  const [recent,   setRecent]   = useState<Task[]>([])
+  const [loading,  setLoading]  = useState(true)
   const [editTask, setEditTask] = useState<Task | null>(null)
 
   async function load() {
-    if (!user) return
+    if (!userId) return
     setLoading(true)
     try {
       const [s, t] = await Promise.all([
-        fetchTaskStats(user.id, isAdmin),
-        fetchTasks(user.id, isAdmin, { status: 'all', type: 'all', search: '' }),
+        fetchTaskStats(userId, isAdmin),
+        fetchTasks(userId, isAdmin, { status: 'all', type: 'all', subject_id: 'all', search: '' }),
       ])
       setStats(s)
       setRecent(t.slice(0, 5))
@@ -34,31 +35,33 @@ export function DashboardPage() {
     }
   }
 
-  useEffect(() => { load() }, [user, isAdmin])
+  useEffect(() => { load() }, [userId, isAdmin])
 
   async function handleCycle(task: Task) {
-    await cycleTaskStatus(task)
+    if (!userId) return
+    await cycleTaskStatus(task, userId)
     load()
   }
 
   async function handleEdit(values: TaskFormValues) {
-    if (!editTask) return
-    await updateTask(editTask.id, values)
+    if (!editTask || !userId) return
+    await updateTask(editTask.task_id, userId, values)
     setEditTask(null)
     load()
   }
 
   async function handleDelete(task: Task) {
+    if (!userId) return
     if (!confirm(`Delete "${task.title}"?`)) return
-    await deleteTask(task.id)
+    await deleteTask(task.task_id, userId)
     load()
   }
 
   const statCards = [
-    { label: 'Total tasks', value: stats?.total ?? 0, icon: LayoutList, color: 'text-gray-600 bg-gray-100' },
-    { label: 'Pending', value: stats?.pending ?? 0, icon: Clock, color: 'text-amber-600 bg-amber-50' },
-    { label: 'Ongoing', value: stats?.ongoing ?? 0, icon: AlertCircle, color: 'text-blue-600 bg-blue-50' },
-    { label: 'Done', value: stats?.done ?? 0, icon: CheckCircle2, color: 'text-emerald-600 bg-emerald-50' },
+    { label: 'Total tasks', value: stats?.total   ?? 0, icon: LayoutList,  color: 'text-gray-600 bg-gray-100' },
+    { label: 'Pending',     value: stats?.pending  ?? 0, icon: Clock,        color: 'text-amber-600 bg-amber-50' },
+    { label: 'Ongoing',     value: stats?.ongoing  ?? 0, icon: AlertCircle,  color: 'text-blue-600 bg-blue-50' },
+    { label: 'Done',        value: stats?.done     ?? 0, icon: CheckCircle2, color: 'text-emerald-600 bg-emerald-50' },
   ]
 
   return (
@@ -74,7 +77,6 @@ export function DashboardPage() {
         <div className="flex items-center justify-center h-40"><Spinner className="text-blue-500" /></div>
       ) : (
         <>
-          {/* Stats grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
             {statCards.map(s => (
               <Card key={s.label} className="p-4">
@@ -96,7 +98,6 @@ export function DashboardPage() {
             </div>
           )}
 
-          {/* Recent tasks */}
           <Card>
             <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-gray-100">
               <h2 className="text-sm font-semibold text-gray-700">Recent tasks</h2>
@@ -110,7 +111,7 @@ export function DashboardPage() {
               ) : (
                 recent.map(task => (
                   <TaskCard
-                    key={task.id}
+                    key={task.task_id}
                     task={task}
                     onEdit={setEditTask}
                     onDelete={handleDelete}
