@@ -7,6 +7,8 @@ import { TasksPage } from './pages/TasksPage'
 import { UsersPage } from './pages/UsersPage'
 import { CalendarPage } from './pages/CalendarPage'
 import { AnalyticsPage } from './pages/AnalyticsPage'
+import { SubjectsPage } from './pages/SubjectsPage'
+import { NotificationsPage } from './pages/NotificationsPage'
 import { Spinner } from './components/ui'
 
 function AppLayout() {
@@ -47,7 +49,9 @@ export default function App() {
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/tasks" element={<TasksPage />} />
+            <Route path="/subjects" element={<SubjectsPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
             <Route element={<AdminOnly />}>
               <Route path="/users" element={<UsersPage />} />
               <Route path="/analytics" element={<AnalyticsPage />} />
