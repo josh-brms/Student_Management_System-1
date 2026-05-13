@@ -23,6 +23,7 @@ const TAG_COLORS = ['#6366F1','#0EA5E9','#10B981','#F59E0B','#EF4444','#8B5CF6',
 
 export function TaskModal({ task, onSave, onDelete, onClose }: Props) {
   const { profile } = useAuth()
+  const subjectInputId = 'task-subject-input'
   const [form, setForm] = useState<TaskFormValues>(
     task ? {
       title:       task.title,
@@ -33,6 +34,9 @@ export function TaskModal({ task, onSave, onDelete, onClose }: Props) {
       due_date:    task.due_date ?? '',
       subject_id:  task.subject_id ?? null,
     } : defaultForm
+  )
+  const [subjectInput, setSubjectInput] = useState(
+    task?.subject ? (task.subject.code ? `${task.subject.code} · ${task.subject.name}` : task.subject.name) : ''
   )
   const [subjects,  setSubjects]  = useState<Subject[]>([])
   const [loading,   setLoading]   = useState(false)
@@ -60,7 +64,7 @@ export function TaskModal({ task, onSave, onDelete, onClose }: Props) {
       fetchComments(task.task_id).then(setComments).catch(() => {})
       fetchTaskTags(task.task_id).then(setTaskTags).catch(() => {})
     }
-  }, [profile, task?.task_id])
+  }, [profile])
 
   function set<K extends keyof TaskFormValues>(k: K, v: TaskFormValues[K]) {
     setForm(f => ({ ...f, [k]: v }))
@@ -162,17 +166,16 @@ export function TaskModal({ task, onSave, onDelete, onClose }: Props) {
                 <input value={form.title} onChange={e => set('title', e.target.value)} placeholder="Task title" />
               </div>
 
-              <div className="form-field">
-                <label>Subject</label>
-                <select value={form.subject_id ?? ''} onChange={e => set('subject_id', e.target.value ? Number(e.target.value) : null)}>
-                  <option value="">— No subject —</option>
-                  {subjects.map(s => (
-                    <option key={s.subject_id} value={s.subject_id}>
-                      {s.code ? `${s.code} · ` : ''}{s.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+        <FormField label="Subject (optional)">
+          <Select value={form.subject_id ?? ''} onChange={e => set('subject_id', e.target.value ? Number(e.target.value) : null)}>
+            <option value="">— No subject —</option>
+            {subjects.map(s => (
+              <option key={s.subject_id} value={s.subject_id}>
+                {s.code ? `${s.code} · ` : ''}{s.name}
+              </option>
+            ))}
+          </Select>
+        </FormField>
 
               <div className="form-row">
                 <div className="form-field">
@@ -360,3 +363,4 @@ export function TaskModal({ task, onSave, onDelete, onClose }: Props) {
     </div>
   )
 }
+
