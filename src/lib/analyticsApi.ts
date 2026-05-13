@@ -18,23 +18,23 @@ export interface AnalyticsData {
 }
 
 export async function fetchAnalytics(): Promise<AnalyticsData> {
-  // Fetch all tasks with profile info
+  // Fetch all tasks with user info
   const { data: tasks, error: tasksError } = await supabase
     .from('tasks')
-    .select('*, profile:profiles(name)')
+    .select('*, user:users(name)')
 
   if (tasksError) throw new Error(tasksError.message)
 
-  // Fetch all profiles
-  const { data: profiles, error: profilesError } = await supabase
-    .from('profiles')
+  // Fetch all students
+  const { data: students, error: studentsError } = await supabase
+    .from('users')
     .select('*')
     .eq('role', 'student')
 
-  if (profilesError) throw new Error(profilesError.message)
+  if (studentsError) throw new Error(studentsError.message)
 
   const taskList = (tasks ?? []) as any[]
-  const studentList = (profiles ?? []) as any[]
+  const studentList = (students ?? []) as any[]
 
   // Calculate basic metrics
   const today = new Date()
@@ -85,7 +85,7 @@ export async function fetchAnalytics(): Promise<AnalyticsData> {
 
   // Student performance
   const studentPerformance = studentList.map(student => {
-    const studentTasks = taskList.filter(t => t.user_id === student.id)
+    const studentTasks = taskList.filter(t => t.user_id === student.user_id)
     const completedStudentTasks = studentTasks.filter(t => t.status === 'done').length
     const completionRate = studentTasks.length > 0 ? (completedStudentTasks / studentTasks.length) * 100 : 0
     return {
@@ -110,7 +110,7 @@ export async function fetchAnalytics(): Promise<AnalyticsData> {
       const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
       return {
         title: t.title,
-        studentName: t.profile?.name ?? 'Unknown',
+        studentName: t.user?.name ?? 'Unknown',
         dueDate: new Date(t.due_date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }),
         daysOverdue,
       }
@@ -124,7 +124,7 @@ export async function fetchAnalytics(): Promise<AnalyticsData> {
     .slice(0, 10)
     .map(t => ({
       taskTitle: t.title,
-      studentName: t.profile?.name ?? 'Unknown',
+      studentName: t.user?.name ?? 'Unknown',
       status: t.status,
       updatedAt: new Date(t.updated_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
     }))
