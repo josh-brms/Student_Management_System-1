@@ -23,7 +23,6 @@ const TAG_COLORS = ['#6366F1','#0EA5E9','#10B981','#F59E0B','#EF4444','#8B5CF6',
 
 export function TaskModal({ task, onSave, onDelete, onClose }: Props) {
   const { profile } = useAuth()
-  const subjectInputId = 'task-subject-input'
   const [form, setForm] = useState<TaskFormValues>(
     task ? {
       title:       task.title,
@@ -34,9 +33,6 @@ export function TaskModal({ task, onSave, onDelete, onClose }: Props) {
       due_date:    task.due_date ?? '',
       subject_id:  task.subject_id ?? null,
     } : defaultForm
-  )
-  const [subjectInput, setSubjectInput] = useState(
-    task?.subject ? (task.subject.code ? `${task.subject.code} · ${task.subject.name}` : task.subject.name) : ''
   )
   const [subjects,  setSubjects]  = useState<Subject[]>([])
   const [loading,   setLoading]   = useState(false)
@@ -64,7 +60,7 @@ export function TaskModal({ task, onSave, onDelete, onClose }: Props) {
       fetchComments(task.task_id).then(setComments).catch(() => {})
       fetchTaskTags(task.task_id).then(setTaskTags).catch(() => {})
     }
-  }, [profile])
+  }, [profile, task?.task_id])
 
   function set<K extends keyof TaskFormValues>(k: K, v: TaskFormValues[K]) {
     setForm(f => ({ ...f, [k]: v }))
@@ -363,4 +359,3 @@ export function TaskModal({ task, onSave, onDelete, onClose }: Props) {
     </div>
   )
 }
-
