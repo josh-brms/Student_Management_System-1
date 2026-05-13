@@ -162,17 +162,16 @@ export function TaskModal({ task, onSave, onDelete, onClose }: Props) {
                 <input value={form.title} onChange={e => set('title', e.target.value)} placeholder="Task title" />
               </div>
 
-              <div className="form-field">
-                <label>Subject</label>
-                <select value={form.subject_id ?? ''} onChange={e => set('subject_id', e.target.value ? Number(e.target.value) : null)}>
-                  <option value="">— No subject —</option>
-                  {subjects.map(s => (
-                    <option key={s.subject_id} value={s.subject_id}>
-                      {s.code ? `${s.code} · ` : ''}{s.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+        <FormField label="Subject (optional)">
+          <Select value={form.subject_id ?? ''} onChange={e => set('subject_id', e.target.value ? Number(e.target.value) : null)}>
+            <option value="">— No subject —</option>
+            {subjects.map(s => (
+              <option key={s.subject_id} value={s.subject_id}>
+                {s.code ? `${s.code} · ` : ''}{s.name}
+              </option>
+            ))}
+          </Select>
+        </FormField>
 
               <div className="form-row">
                 <div className="form-field">
