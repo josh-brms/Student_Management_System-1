@@ -56,44 +56,219 @@ html, body, #root {
   font-family: 'DM Sans', sans-serif;
 }
 
-/* LOGIN & AUTH */
+/* ─── LOGIN & AUTH ─────────────────────────────────────────────────────────── */
+
+/* Animated canvas lives behind everything */
+#auth-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Soft mesh-gradient orbs */
+.auth-orb {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  animation: orbDrift ease-in-out infinite alternate;
+}
+.auth-orb-1 {
+  width: min(520px, 60vw);
+  height: min(520px, 60vw);
+  background: radial-gradient(circle at 40% 40%, #c7d9f8 0%, #e8f0fb 55%, transparent 75%);
+  top: -140px; left: -100px;
+  animation-duration: 16s;
+  opacity: 0.7;
+}
+.auth-orb-2 {
+  width: min(400px, 50vw);
+  height: min(400px, 50vw);
+  background: radial-gradient(circle at 60% 55%, #dbeafe 0%, #eff6ff 55%, transparent 75%);
+  bottom: -100px; right: -80px;
+  animation-duration: 12s;
+  animation-delay: -5s;
+  opacity: 0.65;
+}
+.auth-orb-3 {
+  width: min(260px, 35vw);
+  height: min(260px, 35vw);
+  background: radial-gradient(circle, #e0f2f7 0%, transparent 70%);
+  top: 42%; left: 30%;
+  animation-duration: 10s;
+  animation-delay: -3s;
+  opacity: 0.5;
+}
+@keyframes orbDrift {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(24px, 18px) scale(1.06); }
+}
+
+/* Subtle dot-grid overlay */
+.auth-grid {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, #94a3b8 1px, transparent 1px);
+  background-size: 28px 28px;
+  opacity: 0.13;
+}
+
+/* Floating task-pill badges (decorative) */
+.auth-pill {
+  position: fixed;
+  z-index: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px;
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(10px);
+  border: 0.5px solid rgba(28, 27, 24, 0.1);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--muted);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  animation: pillFloat ease-in-out infinite alternate;
+  white-space: nowrap;
+}
+.auth-pill-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.auth-pill-dot.pending  { background: #D97706; }
+.auth-pill-dot.ongoing  { background: #1356A0; }
+.auth-pill-dot.done     { background: #1A6B3A; }
+.auth-pill-dot.high     { background: #B91C1C; }
+
+.auth-pill-1 { top: 12%; left: 6%;  animation-duration: 7s;  animation-delay: 0s; }
+.auth-pill-2 { top: 68%; left: 5%;  animation-duration: 9s;  animation-delay: -3s; }
+.auth-pill-3 { top: 18%; right: 6%; animation-duration: 8s;  animation-delay: -1.5s; }
+.auth-pill-4 { bottom: 20%; right: 5%; animation-duration: 6s; animation-delay: -4s; }
+
+@keyframes pillFloat {
+  from { transform: translateY(0px);   opacity: 0.85; }
+  to   { transform: translateY(-10px); opacity: 1;    }
+}
+
+/* Hide pills on narrow screens — keep them decorative, not noisy */
+@media (max-width: 860px) {
+  .auth-pill { display: none; }
+  .auth-orb-1 { opacity: 0.45; }
+  .auth-orb-2 { opacity: 0.4; }
+}
+
 .auth-page {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: var(--bg);
+  /* Warm cream-to-sky gradient base */
+  background: linear-gradient(145deg, #eef4fd 0%, #f5f8ff 35%, #f0f7f4 65%, #faf9f7 100%);
   padding: 20px;
+  overflow: hidden;
+}
+
+/* Card entrance animation */
+@keyframes cardUp {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .login-card {
-  background: var(--surface);
-  border: 0.5px solid var(--border);
-  border-radius: 16px;
+  position: relative;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 0.5px solid rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
   padding: 40px 36px;
-  width: 360px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow:
+    0 1px 0 0 rgba(255,255,255,0.9) inset,
+    0 20px 60px rgba(19, 86, 160, 0.1),
+    0 4px 16px rgba(0, 0, 0, 0.06);
+  animation: cardUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* Accent bar at top of card */
+.login-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 24px; right: 24px;
+  height: 2px;
+  border-radius: 0 0 4px 4px;
+  background: linear-gradient(90deg, #1356A0, #3b82f6, #1356A0);
+  opacity: 0.6;
+}
+
+/* Staggered field fade-in */
+.login-card .login-logo  { animation: cardUp 0.6s 0.05s both cubic-bezier(0.22,1,0.36,1); }
+.login-card .login-title { animation: cardUp 0.6s 0.10s both cubic-bezier(0.22,1,0.36,1); }
+.login-card .login-sub   { animation: cardUp 0.6s 0.15s both cubic-bezier(0.22,1,0.36,1); }
+.login-card form         { animation: cardUp 0.6s 0.20s both cubic-bezier(0.22,1,0.36,1); }
+.login-card .login-footer{ animation: cardUp 0.6s 0.25s both cubic-bezier(0.22,1,0.36,1); }
+
 .login-logo {
-  font-size: 13px;
-  letter-spacing: 0.08em;
-  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--primary);
   text-transform: uppercase;
-  margin-bottom: 32px;
-  font-weight: 500;
+  margin-bottom: 28px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.login-logo::before {
+  content: '';
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #1356A0, #3b82f6);
+  flex-shrink: 0;
 }
 
 .login-title {
   font-size: 22px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text);
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 
 .login-sub {
   font-size: 13px;
   color: var(--muted);
   margin-bottom: 28px;
+}
+
+/* Responsive card sizing */
+@media (max-width: 480px) {
+  .login-card {
+    padding: 32px 22px;
+    border-radius: 16px;
+    max-width: 100%;
+  }
+}
+@media (max-height: 620px) {
+  .login-card {
+    padding: 24px 28px;
+  }
+  .login-logo { margin-bottom: 16px; }
+  .login-sub  { margin-bottom: 18px; }
 }
 
 .field {

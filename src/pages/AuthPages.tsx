@@ -1,6 +1,120 @@
-import { useState, FormEvent } from 'react'
+import { useState, FormEvent, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext'
+
+// ─── Animated background: floating particles on canvas ───────────────────────
+function AuthBackground() {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    let raf: number
+    let W = 0, H = 0
+
+    interface Particle {
+      x: number; y: number
+      vx: number; vy: number
+      r: number; alpha: number
+    }
+
+    const particles: Particle[] = []
+    const COUNT = 52
+
+    function resize() {
+      W = canvas!.width  = window.innerWidth
+      H = canvas!.height = window.innerHeight
+    }
+    resize()
+    window.addEventListener('resize', resize)
+
+    for (let i = 0; i < COUNT; i++) {
+      particles.push({
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
+        vx: (Math.random() - 0.5) * 0.35,
+        vy: (Math.random() - 0.5) * 0.35,
+        r: Math.random() * 2.5 + 1,
+        alpha: Math.random() * 0.35 + 0.08,
+      })
+    }
+
+    // Palette: blues and teals matching the app's --primary
+    const colors = ['#1356A0', '#3b82f6', '#60a5fa', '#0ea5e9', '#2563eb']
+
+    function draw() {
+      ctx!.clearRect(0, 0, W, H)
+
+      // Draw connecting lines between nearby particles
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x
+          const dy = particles[i].y - particles[j].y
+          const dist = Math.sqrt(dx * dx + dy * dy)
+          if (dist < 110) {
+            ctx!.beginPath()
+            ctx!.moveTo(particles[i].x, particles[i].y)
+            ctx!.lineTo(particles[j].x, particles[j].y)
+            ctx!.strokeStyle = `rgba(19, 86, 160, ${0.07 * (1 - dist / 110)})`
+            ctx!.lineWidth = 0.7
+            ctx!.stroke()
+          }
+        }
+      }
+
+      // Draw particles
+      particles.forEach((p, idx) => {
+        ctx!.beginPath()
+        ctx!.arc(p.x, p.y, p.r, 0, Math.PI * 2)
+        ctx!.fillStyle = colors[idx % colors.length]
+        ctx!.globalAlpha = p.alpha
+        ctx!.fill()
+        ctx!.globalAlpha = 1
+
+        p.x += p.vx
+        p.y += p.vy
+        if (p.x < -10) p.x = W + 10
+        if (p.x > W + 10) p.x = -10
+        if (p.y < -10) p.y = H + 10
+        if (p.y > H + 10) p.y = -10
+      })
+
+      raf = requestAnimationFrame(draw)
+    }
+    draw()
+
+    return () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener('resize', resize)
+    }
+  }, [])
+
+  return (
+    <>
+      <canvas id="auth-canvas" ref={canvasRef} />
+      <div className="auth-grid" />
+      <div className="auth-orb auth-orb-1" />
+      <div className="auth-orb auth-orb-2" />
+      <div className="auth-orb auth-orb-3" />
+      {/* Floating ambient task pills */}
+      <div className="auth-pill auth-pill-1">
+        <span className="auth-pill-dot ongoing" />Quiz due tomorrow
+      </div>
+      <div className="auth-pill auth-pill-2">
+        <span className="auth-pill-dot done" />3 tasks completed
+      </div>
+      <div className="auth-pill auth-pill-3">
+        <span className="auth-pill-dot high" />Project deadline today
+      </div>
+      <div className="auth-pill auth-pill-4">
+        <span className="auth-pill-dot pending" />2 pending assignments
+      </div>
+    </>
+  )
+}
 
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase()
@@ -39,6 +153,7 @@ export function LoginPage() {
 
   return (
     <div className="auth-page">
+      <AuthBackground />
       <div className="login-card">
         <div className="login-logo">TaskMate · Divine Word College</div>
         <div className="login-title">Welcome back, Student</div>
@@ -103,6 +218,7 @@ export function AdminLoginPage() {
 
   return (
     <div className="auth-page">
+      <AuthBackground />
       <div className="login-card">
         <div className="login-logo">TaskMate · Admin Panel</div>
         <div className="login-title">Administrator Login</div>
@@ -172,6 +288,7 @@ export function RegisterPage() {
 
   return (
     <div className="auth-page">
+      <AuthBackground />
       <div className="login-card">
         <div className="login-logo">TaskMate · Create Account</div>
         <div className="login-title">Get started</div>
