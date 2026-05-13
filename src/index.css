@@ -71,7 +71,8 @@ html, body, #root {
   border: 0.5px solid var(--border);
   border-radius: 16px;
   padding: 40px 36px;
-  width: 360px;
+  width: 100%;
+  max-width: 360px;
 }
 
 .login-logo {
@@ -196,6 +197,114 @@ html, body, #root {
   background: var(--text);
   color: #fff;
   border-color: var(--text);
+}
+
+/* RESPONSIVE MEDIA QUERIES */
+@media (max-width: 480px) {
+  .auth-page {
+    padding: 16px;
+  }
+
+  .login-card {
+    padding: 28px 20px;
+    border-radius: 12px;
+  }
+
+  .login-logo {
+    font-size: 11px;
+    margin-bottom: 24px;
+  }
+
+  .login-title {
+    font-size: 18px;
+    margin-bottom: 4px;
+  }
+
+  .login-sub {
+    font-size: 12px;
+    margin-bottom: 20px;
+  }
+
+  .field {
+    margin-bottom: 12px;
+  }
+
+  .field label {
+    font-size: 10px;
+    margin-bottom: 5px;
+  }
+
+  .field input,
+  .field select {
+    height: 44px;
+    font-size: 16px;
+    padding: 0 12px;
+  }
+
+  .btn-primary {
+    height: 44px;
+    font-size: 14px;
+    margin-top: 6px;
+  }
+
+  .login-footer {
+    margin-top: 16px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .modal {
+    width: 90%;
+    max-width: 440px;
+    padding: 24px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 200px;
+  }
+
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .content {
+    padding: 16px;
+  }
+}
+
+@media (max-height: 600px) {
+  .auth-page {
+    min-height: auto;
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+
+  .login-card {
+    padding: 24px 20px;
+  }
+
+  .login-logo {
+    margin-bottom: 16px;
+  }
+
+  .login-title {
+    font-size: 18px;
+  }
+
+  .login-sub {
+    margin-bottom: 16px;
+  }
 }
 
 /* LAYOUT */
