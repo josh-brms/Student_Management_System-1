@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, MessageSquare } from 'lucide-react'
 import { useAuth } from '../lib/AuthContext'
-import { fetchTasks, createTask, updateTask, deleteTask } from '../lib/taskApi'
+import { fetchTasks, createTask, updateTask, deleteTask, cycleTaskStatus } from '../lib/taskApi'
 import { Topbar } from '../components/Topbar'
 import { TaskModal } from '../components/TaskModal'
+import { CommentsPanel } from '../components/CommentsPanel'
 import type { Task, TaskFilter, TaskFormValues } from '../types'
 
 const STATUS_TABS = ['all', 'pending', 'ongoing', 'done'] as const
@@ -20,6 +21,7 @@ export function TasksPage() {
   const [showModal,    setShowModal]    = useState(false)
   const [editTask,     setEditTask]     = useState<Task | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Task | null>(null)
+  const [commentTask,  setCommentTask]  = useState<Task | null>(null)
 
   const load = useCallback(async () => {
     if (!userId) return
@@ -57,72 +59,57 @@ export function TasksPage() {
     load()
   }
 
+  async function handleCycle(task: Task) {
+    if (!userId) return
+    await cycleTaskStatus(task, userId)
+    load()
+  }
+
   function setFilterField<K extends keyof TaskFilter>(k: K, v: TaskFilter[K]) {
     setFilter(f => ({ ...f, [k]: v }))
-  }
-
-  function getStatusBadgeClass(status: string): string {
-    return `badge badge-${status}`
-  }
-
-  function getPriorityBadgeClass(priority: string): string {
-    return `badge badge-${priority === 'high' ? 'high' : priority === 'medium' ? 'medium' : 'low'}`
-  }
-
-  function getTypeBadgeClass(type: string): string {
-    return `badge badge-${type}`
   }
 
   return (
     <div className="main">
       <Topbar title={isAdmin ? 'All tasks' : 'My tasks'} onNewClick={() => setShowModal(true)} showNewButton />
       <div className="content">
-        <div className="card" style={{marginBottom: 20, padding: '16px 20px'}}>
+        {/* Filters */}
+        <div className="card" style={{ marginBottom: 20, padding: '16px 20px' }}>
           <div className="filter-row">
             <div>
               {STATUS_TABS.map(s => (
-                <button
-                  key={s}
-                  className={`filter-chip ${filter.status === s ? 'active' : ''}`}
-                  onClick={() => setFilterField('status', s)}
-                >
+                <button key={s} className={`filter-chip ${filter.status === s ? 'active' : ''}`}
+                  onClick={() => setFilterField('status', s)}>
                   {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
                 </button>
               ))}
             </div>
-            <div className="filter-sep" style={{margin: '0 8px'}} />
+            <div className="filter-sep" style={{ margin: '0 8px' }} />
             <div>
               {TYPE_TABS.map(t => (
-                <button
-                  key={t}
-                  className={`filter-chip ${filter.type === t ? 'active' : ''}`}
-                  onClick={() => setFilterField('type', t)}
-                >
+                <button key={t} className={`filter-chip ${filter.type === t ? 'active' : ''}`}
+                  onClick={() => setFilterField('type', t)}>
                   {t === 'all' ? 'All types' : t.charAt(0).toUpperCase() + t.slice(1)}
                 </button>
               ))}
             </div>
-            <input
-              type="text"
-              value={filter.search}
+            <input type="text" value={filter.search}
               onChange={e => setFilterField('search', e.target.value)}
-              placeholder="Search tasks…"
-              className="search-box"
-              style={{marginLeft: 'auto', maxWidth: 200}}
-            />
+              placeholder="Search tasks…" className="search-box"
+              style={{ marginLeft: 'auto', maxWidth: 200 }} />
           </div>
         </div>
 
         {loading ? (
-          <div style={{textAlign: 'center', padding: '60px 20px', color: 'var(--muted)'}}>
-            <div className="spinner" style={{margin: '0 auto 16px'}}></div>
+          <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)' }}>
+            <div className="spinner" style={{ margin: '0 auto 16px' }} />
             <p>Loading tasks...</p>
           </div>
         ) : tasks.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">○</div>
             <div className="empty-text">No tasks found</div>
-            <button className="btn-new" onClick={() => setShowModal(true)} style={{margin: '0 auto'}}>
+            <button className="btn-new" onClick={() => setShowModal(true)} style={{ margin: '0 auto' }}>
               <Plus size={12} /> New task
             </button>
           </div>
@@ -135,27 +122,42 @@ export function TasksPage() {
                 <th>Priority</th>
                 <th>Status</th>
                 <th>Due date</th>
-                <th style={{width: 100}}></th>
+                <th style={{ width: 140 }}></th>
               </tr>
             </thead>
             <tbody>
               {tasks.map(t => {
                 const today = new Date()
-                const due = t.due_date ? new Date(t.due_date) : new Date()
-                const overdue = t.due_date && due < today && t.status !== 'done'
-                const dueFmt = due.toLocaleDateString('en-PH', {month: 'short', day: 'numeric', year: 'numeric'})
+                const due = t.due_date ? new Date(t.due_date) : null
+                const overdue = due && due < today && t.status !== 'done'
+                const dueFmt = due?.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) ?? '—'
                 return (
                   <tr key={t.task_id}>
                     <td>
                       <div className="task-name">{t.title}</div>
                       {t.description && <div className="task-desc">{t.description}</div>}
+                      {t.subject && (
+                        <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 4, background: t.subject.color_hex + '22', color: t.subject.color_hex, marginTop: 4, display: 'inline-block' }}>
+                          {t.subject.code ?? t.subject.name}
+                        </span>
+                      )}
+                      {isAdmin && t.user && (
+                        <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>👤 {t.user.name}</div>
+                      )}
                     </td>
-                    <td><span className={getTypeBadgeClass(t.type)}>{t.type}</span></td>
-                    <td><span className={getPriorityBadgeClass(t.priority)}>{t.priority}</span></td>
-                    <td><span className={getStatusBadgeClass(t.status)}>{t.status}</span></td>
+                    <td><span className={`badge badge-${t.type}`}>{t.type}</span></td>
+                    <td><span className={`badge badge-${t.priority}`}>{t.priority}</span></td>
+                    <td>
+                      <button onClick={() => handleCycle(t)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                        <span className={`badge badge-${t.status}`} style={{ cursor: 'pointer' }} title="Click to cycle status">{t.status}</span>
+                      </button>
+                    </td>
                     <td><div className={`due-date ${overdue ? 'due-overdue' : ''}`}>{dueFmt}{overdue ? ' · overdue' : ''}</div></td>
                     <td>
                       <div className="row-actions">
+                        <button className="row-btn" onClick={() => setCommentTask(t)} title="Comments" style={{ padding: '4px 8px' }}>
+                          <MessageSquare size={13} />
+                        </button>
                         <button className="row-btn" onClick={() => setEditTask(t)}>Edit</button>
                         <button className="row-btn danger" onClick={() => setDeleteTarget(t)}>Delete</button>
                       </div>
@@ -172,26 +174,26 @@ export function TasksPage() {
         <TaskModal
           task={editTask ?? undefined}
           onSave={editTask ? handleEdit : handleCreate}
-          onDelete={editTask ? () => deleteTarget && handleDelete() : undefined}
-          onClose={() => { setShowModal(false); setEditTask(null); }}
+          onDelete={editTask ? () => { setDeleteTarget(editTask); setEditTask(null) } : undefined}
+          onClose={() => { setShowModal(false); setEditTask(null) }}
         />
       )}
 
       {deleteTarget && (
         <div className="modal-overlay open">
-          <div className="modal" style={{width: 320}}>
+          <div className="modal" style={{ width: 320 }}>
             <div className="modal-title">Delete task?</div>
             <div className="modal-sub">{deleteTarget.title}</div>
-            <p style={{fontSize: 13, color: 'var(--muted)', marginBottom: 20}}>
-              This action cannot be undone.
-            </p>
+            <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 20 }}>This cannot be undone.</p>
             <div className="modal-footer">
               <button className="btn-cancel" onClick={() => setDeleteTarget(null)}>Cancel</button>
-              <button className="btn-save" onClick={handleDelete} style={{background: '#B91C1C'}}>Delete</button>
+              <button className="btn-save" onClick={handleDelete} style={{ background: '#B91C1C' }}>Delete</button>
             </div>
           </div>
         </div>
       )}
+
+      {commentTask && <CommentsPanel task={commentTask} onClose={() => setCommentTask(null)} />}
     </div>
   )
 }
